@@ -1,0 +1,115 @@
+package neoforge.donjonmc.player;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+public class PlayerData {
+
+    public static final Codec<PlayerData> CODEC = RecordCodecBuilder.create(instance ->
+        instance.group(
+            Codec.INT.fieldOf("level").forGetter(d -> d.level),
+            Codec.LONG.fieldOf("xp").forGetter(d -> d.xp),
+            Codec.INT.fieldOf("skillPoints").forGetter(d -> d.skillPoints),
+            Codec.INT.fieldOf("strength").forGetter(d -> d.strength),
+            Codec.INT.fieldOf("agility").forGetter(d -> d.agility),
+            Codec.INT.fieldOf("vitality").forGetter(d -> d.vitality),
+            Codec.INT.fieldOf("intelligence").forGetter(d -> d.intelligence),
+            Codec.INT.fieldOf("perception").forGetter(d -> d.perception),
+            Codec.BOOL.fieldOf("initialized").forGetter(d -> d.initialized),
+            Codec.FLOAT.optionalFieldOf("mana", 100f).forGetter(d -> 100f),
+            Codec.INT.optionalFieldOf("playerClassOrdinal", 0).forGetter(d -> d.playerClassOrdinal),
+            Codec.BOOL.optionalFieldOf("speedEnabled", true).forGetter(d -> d.speedEnabled)
+        ).apply(instance, PlayerData::new)
+    );
+
+    private int level;
+    private long xp;
+    private int skillPoints;
+    private int strength;
+    private int agility;
+    private int vitality;
+    private int intelligence;
+    private int perception;
+    private boolean initialized;
+    private float mana;
+    private int playerClassOrdinal;
+    private boolean speedEnabled;
+
+    public PlayerData() {
+        this(0, 0L, 0, 0, 0, 0, 0, 0, false, 100f, 0, true);
+    }
+
+    public PlayerData(int level, long xp, int skillPoints, int strength, int agility,
+                      int vitality, int intelligence, int perception, boolean initialized,
+                      float mana, int playerClassOrdinal, boolean speedEnabled) {
+        this.level              = level;
+        this.xp                 = xp;
+        this.skillPoints        = skillPoints;
+        this.strength           = strength;
+        this.agility            = agility;
+        this.vitality           = vitality;
+        this.intelligence       = intelligence;
+        this.perception         = perception;
+        this.initialized        = initialized;
+        this.mana               = mana;
+        this.playerClassOrdinal = playerClassOrdinal;
+        this.speedEnabled       = speedEnabled;
+    }
+
+    public int     getLevel()        { return level; }
+    public long    getXp()           { return xp; }
+    public int     getSkillPoints()  { return skillPoints; }
+    public int     getStrength()     { return strength; }
+    public int     getAgility()      { return agility; }
+    public int     getVitality()     { return vitality; }
+    public int     getIntelligence() { return intelligence; }
+    public int     getPerception()   { return perception; }
+    public boolean isInitialized()   { return initialized; }
+    public float   getMana()         { return mana; }
+    public int     getPlayerClassOrdinal() { return playerClassOrdinal; }
+    public PlayerClass getPlayerClass()    { return PlayerClass.fromOrdinal(playerClassOrdinal); }
+    public boolean isSpeedEnabled()        { return speedEnabled; }
+
+    /**
+     * @deprecated Le mana est désormais géré par Iron's Spells 'n Spellbooks (MagicData + AttributeRegistry.MAX_MANA).
+     * Ce champ est conservé dans le codec pour la rétrocompatibilité des sauvegardes uniquement.
+     */
+    @Deprecated
+    public float maxMana() {
+        float base = 100f + intelligence * 5f;
+        return (getPlayerClass() == PlayerClass.MAGE) ? base * 1.5f : base;
+    }
+
+    public void setLevel(int level)        { this.level = level; }
+    public void setXp(long xp)            { this.xp = xp; }
+    public void addSkillPoints(int amount) { this.skillPoints += amount; }
+    public void setInitialized(boolean v)  { this.initialized = v; }
+    public void setPlayerClass(PlayerClass cls)  { this.playerClassOrdinal = cls.ordinal(); }
+    public void setSpeedEnabled(boolean v)       { this.speedEnabled = v; }
+
+    public void setStrength(int v)     { this.strength = v; }
+    public void setAgility(int v)      { this.agility = v; }
+    public void setVitality(int v)     { this.vitality = v; }
+    public void setIntelligence(int v) { this.intelligence = v; }
+    public void setPerception(int v)   { this.perception = v; }
+
+    public void spendSkillPoint() {
+        if (this.skillPoints > 0) this.skillPoints--;
+    }
+
+    /** @deprecated Utiliser {@link io.redspace.ironsspellbooks.api.magic.MagicData#addMana}. */
+    @Deprecated
+    public boolean consumeMana(float amount) {
+        if (this.mana < amount) return false;
+        this.mana -= amount;
+        return true;
+    }
+
+    /** @deprecated Utiliser {@link io.redspace.ironsspellbooks.api.magic.MagicData#addMana}. */
+    @Deprecated
+    public void regenMana(float rate) {
+        this.mana = Math.min(this.mana + rate, maxMana());
+    }
+
+    public long xpForNextLevel() { return LevelHelper.xpRequired(level); }
+}

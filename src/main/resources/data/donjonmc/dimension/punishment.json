@@ -1,0 +1,13 @@
+{
+  "type": "donjonmc:punishment",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:nether_wastes",
+      "layers": [],
+      "features": false,
+      "lakes": false,
+      "structure_overrides": []
+    }
+  }
+}

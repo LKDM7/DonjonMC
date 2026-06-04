@@ -1,0 +1,12 @@
+{
+  "type": "donjonmc:class_trial",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:the_void",
+      "layers": [],
+      "features": false,
+      "lakes": false
+    }
+  }
+}
