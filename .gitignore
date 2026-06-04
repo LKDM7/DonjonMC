@@ -19,3 +19,11 @@ hs_err_pid*
 
 # Common working directory
 run
+
+# Claude Code / Claude Flow (local tooling, not project source)
+.claude/
+.claude-flow/
+.mcp.json
+
+# Decompiled Minecraft sources (generated, not to be versioned)
+decompiled/
