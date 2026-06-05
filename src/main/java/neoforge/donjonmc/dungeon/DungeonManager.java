@@ -70,9 +70,13 @@ public final class DungeonManager {
         int dz = (overworld.random.nextBoolean() ? 1 : -1) * (80 + overworld.random.nextInt(170));
         int px = target.getBlockX() + dx;
         int pz = target.getBlockZ() + dz;
-        int py = overworld.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, px, pz);
+        int py = overworld.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, px, pz);
 
-        spawnPortal(overworld, new BlockPos(px, py, pz), rank);
+        // S'assurer que le bloc au niveau du portail est accessible (pas sous un surplomb)
+        BlockPos candidate = new BlockPos(px, py, pz);
+        if (!overworld.getBlockState(candidate).isAir()) candidate = candidate.above();
+
+        spawnPortal(overworld, candidate, rank);
     }
 
     /** Spawns a portal at the player's feet (command). */

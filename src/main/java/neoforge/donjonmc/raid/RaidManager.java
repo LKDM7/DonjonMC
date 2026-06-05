@@ -3,6 +3,7 @@ package neoforge.donjonmc.raid;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import java.util.ArrayList;
 import net.minecraft.world.phys.Vec3;
 import neoforge.donjonmc.network.RaidSyncPacket;
 import neoforge.donjonmc.network.RaidSyncPacket.MemberInfo;
@@ -22,6 +23,8 @@ public final class RaidManager {
     private final Map<UUID, RaidGroup> playerToGroup    = new HashMap<>();
     // invitee UUID → leader UUID
     private final Map<UUID, UUID>      pendingInvites   = new HashMap<>();
+    // invitee UUID → System.currentTimeMillis() when the invite was sent
+    private final Map<UUID, Long>      inviteSentTime   = new HashMap<>();
     // invitee UUID → their old role (for rematch auto-assign)
     private final Map<UUID, RaidRole>  pendingRoles     = new HashMap<>();
     // leader UUID → last group snapshot
@@ -35,6 +38,7 @@ public final class RaidManager {
     public void clear() {
         playerToGroup.clear();
         pendingInvites.clear();
+        inviteSentTime.clear();
         pendingRoles.clear();
         lastPos.clear();
         lastMoveTime.clear();
@@ -108,6 +112,7 @@ public final class RaidManager {
         if (playerToGroup.containsKey(target.getUUID())) return InviteResult.TARGET_IN_GROUP;
 
         pendingInvites.put(target.getUUID(), leader.getUUID());
+        inviteSentTime.put(target.getUUID(), System.currentTimeMillis());
         target.sendSystemMessage(Component.translatable(
             "donjonmc.cmd.raid.invite.received", leader.getName().getString()));
         // Sync GUI for both: target sees pending invite, leader sees updated invitable list
@@ -118,6 +123,7 @@ public final class RaidManager {
 
     public AcceptResult acceptInvite(ServerPlayer player) {
         UUID leaderId = pendingInvites.remove(player.getUUID());
+        inviteSentTime.remove(player.getUUID());
         if (leaderId == null) return AcceptResult.NO_INVITE;
 
         RaidGroup group = playerToGroup.get(leaderId);
@@ -139,6 +145,7 @@ public final class RaidManager {
 
     public void declineInvite(ServerPlayer player) {
         pendingInvites.remove(player.getUUID());
+        inviteSentTime.remove(player.getUUID());
         pendingRoles.remove(player.getUUID());
         syncToPlayer(player, null);
     }
@@ -168,6 +175,10 @@ public final class RaidManager {
             // Le chef vient de partir : transférer le chef
             UUID newLeader = group.getMembers().get(0);
             group.setLeaderId(newLeader);
+            ServerPlayer newLeaderPlayer = player.server.getPlayerList().getPlayer(newLeader);
+            if (newLeaderPlayer != null) {
+                newLeaderPlayer.sendSystemMessage(Component.translatable("donjonmc.cmd.raid.new_leader"));
+            }
             syncToGroup(group, player.server);
         } else {
             syncToGroup(group, player.server);
@@ -245,6 +256,7 @@ public final class RaidManager {
         lastPos.remove(player.getUUID());
         lastMoveTime.remove(player.getUUID());
         pendingInvites.remove(player.getUUID());
+        inviteSentTime.remove(player.getUUID());
         pendingRoles.remove(player.getUUID());
 
         RaidGroup group = playerToGroup.remove(player.getUUID());
@@ -261,8 +273,31 @@ public final class RaidManager {
             UUID newLeader = group.getMembers().get(0);
             group.setLeaderId(newLeader);
             saveHistory(player.getUUID(), group);
+            ServerPlayer newLeaderPlayer = player.server.getPlayerList().getPlayer(newLeader);
+            if (newLeaderPlayer != null) {
+                newLeaderPlayer.sendSystemMessage(Component.translatable("donjonmc.cmd.raid.new_leader"));
+            }
         }
         syncToGroup(group, player.server);
+    }
+
+    /** Expire les invitations de raid restées sans réponse après 60 secondes. */
+    public void cleanupExpiredInvites(MinecraftServer server) {
+        long now = System.currentTimeMillis();
+        List<UUID> expired = new ArrayList<>();
+        for (Map.Entry<UUID, Long> entry : inviteSentTime.entrySet()) {
+            if (now - entry.getValue() > 60_000L) expired.add(entry.getKey());
+        }
+        for (UUID uid : expired) {
+            pendingInvites.remove(uid);
+            inviteSentTime.remove(uid);
+            pendingRoles.remove(uid);
+            ServerPlayer sp = server.getPlayerList().getPlayer(uid);
+            if (sp != null) {
+                sp.sendSystemMessage(Component.translatable("donjonmc.cmd.raid.invite.expired"));
+                syncToPlayer(sp, null);
+            }
+        }
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────

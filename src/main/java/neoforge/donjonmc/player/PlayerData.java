@@ -31,7 +31,6 @@ public class PlayerData {
     private int intelligence;
     private int perception;
     private boolean initialized;
-    private float mana;
     private int playerClassOrdinal;
     private boolean speedEnabled;
 
@@ -51,7 +50,7 @@ public class PlayerData {
         this.intelligence       = intelligence;
         this.perception         = perception;
         this.initialized        = initialized;
-        this.mana               = mana;
+        // mana intentionally discarded — managed by Iron's Spells 'n Spellbooks (MagicData)
         this.playerClassOrdinal = playerClassOrdinal;
         this.speedEnabled       = speedEnabled;
     }
@@ -65,20 +64,9 @@ public class PlayerData {
     public int     getIntelligence() { return intelligence; }
     public int     getPerception()   { return perception; }
     public boolean isInitialized()   { return initialized; }
-    public float   getMana()         { return mana; }
     public int     getPlayerClassOrdinal() { return playerClassOrdinal; }
     public PlayerClass getPlayerClass()    { return PlayerClass.fromOrdinal(playerClassOrdinal); }
     public boolean isSpeedEnabled()        { return speedEnabled; }
-
-    /**
-     * @deprecated Le mana est désormais géré par Iron's Spells 'n Spellbooks (MagicData + AttributeRegistry.MAX_MANA).
-     * Ce champ est conservé dans le codec pour la rétrocompatibilité des sauvegardes uniquement.
-     */
-    @Deprecated
-    public float maxMana() {
-        float base = 100f + intelligence * 5f;
-        return (getPlayerClass() == PlayerClass.MAGE) ? base * 1.5f : base;
-    }
 
     public void setLevel(int level)        { this.level = level; }
     public void setXp(long xp)            { this.xp = xp; }
@@ -95,20 +83,6 @@ public class PlayerData {
 
     public void spendSkillPoint() {
         if (this.skillPoints > 0) this.skillPoints--;
-    }
-
-    /** @deprecated Utiliser {@link io.redspace.ironsspellbooks.api.magic.MagicData#addMana}. */
-    @Deprecated
-    public boolean consumeMana(float amount) {
-        if (this.mana < amount) return false;
-        this.mana -= amount;
-        return true;
-    }
-
-    /** @deprecated Utiliser {@link io.redspace.ironsspellbooks.api.magic.MagicData#addMana}. */
-    @Deprecated
-    public void regenMana(float rate) {
-        this.mana = Math.min(this.mana + rate, maxMana());
     }
 
     public long xpForNextLevel() { return LevelHelper.xpRequired(level); }

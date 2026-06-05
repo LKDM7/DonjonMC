@@ -157,7 +157,7 @@
   "donjonmc.dungeon.exited":                "§5[System] §rYou have left the dungeon.",
   "donjonmc.dungeon.exit.not_inside":       "§c[System] §rYou are not inside a dungeon.",
   "donjonmc.dungeon.boss":                  "%s Boss",
-  "donjonmc.dungeon.boss.defeated":         "§6[System] §rThe boss has been defeated! The exit gate has appeared.",
+  "donjonmc.dungeon.boss.defeated":         "§6[System] §rThe boss has been defeated! The exit gate has appeared. §eRight-click§r the portal to leave.",
   "donjonmc.dungeon.double.triggered":      "§d[System] §r§lDOUBLE DUNGEON§r detected! A hidden room has opened beyond the boss.",
   "donjonmc.dungeon.cartenon.name":         "Cartenon",
 
@@ -338,5 +338,9 @@
   "donjonmc.punishment.cooldown":        "§4[System] §rYou have already endured your punishment today. Rest.",
   "donjonmc.cmd.raid.rematch.no_history":"§c[Raid] §rNo group history to rematch from.",
   "donjonmc.cmd.raid.rematch.already_in":"§c[Raid] §rYou are already in a group.",
-  "donjonmc.cmd.raid.rematch.sent":      "§5[Raid] §rQuick rematch initiated — invitations sent to your previous group."
+  "donjonmc.cmd.raid.rematch.sent":      "§5[Raid] §rQuick rematch initiated — invitations sent to your previous group.",
+
+  "donjonmc.cmd.raid.new_leader":        "§5[Raid] §rYou are now the group leader.",
+  "donjonmc.cmd.raid.invite.expired":    "§c[Raid] §rThe invitation has expired (60 seconds with no response).",
+  "donjonmc.dungeon.cartenon.punished":  "§4[Cartenon] §r§lYOU DARE ATTACK THE STATUE...§r The guardian crushes you."
 }

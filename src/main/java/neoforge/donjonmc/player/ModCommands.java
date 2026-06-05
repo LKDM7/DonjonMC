@@ -162,6 +162,10 @@ public final class ModCommands {
                 .then(Commands.literal("top")
                     .executes(ModCommands::executeTop))
 
+                // /donjonmc rematch → recrée le dernier groupe (invitations automatiques)
+                .then(Commands.literal("rematch")
+                    .executes(ModCommands::executeRaidRematch))
+
                 // /donjonmc speed   → active/désactive le bonus de vitesse d'Agilité
                 .then(Commands.literal("speed")
                     .executes(ModCommands::executeToggleSpeed))
@@ -180,6 +184,19 @@ public final class ModCommands {
                     )
                 )
         );
+    }
+
+    // ── /donjonmc rematch ─────────────────────────────────────────────────────
+
+    private static int executeRaidRematch(CommandContext<CommandSourceStack> ctx) {
+        try {
+            ServerPlayer player = ctx.getSource().getPlayerOrException();
+            RaidManager.getInstance().quickRematch(player);
+            return 1;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal(e.getMessage()));
+            return 0;
+        }
     }
 
     // ── /donjonmc trial ──────────────────────────────────────────────────────

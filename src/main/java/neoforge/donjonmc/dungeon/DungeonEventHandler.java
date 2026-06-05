@@ -1,6 +1,7 @@
 package neoforge.donjonmc.dungeon;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
@@ -101,12 +102,12 @@ public final class DungeonEventHandler {
     public static void onDungeonTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel sl)) return;
         if (!sl.dimension().equals(DungeonManager.DUNGEON_DIMENSION)) return;
-        if (sl.getGameTime() % 10 != 0) return;
+        if (sl.getGameTime() % 20 != 0) return;
         for (ServerPlayer player : sl.players()) {
             BlockPos center = player.blockPosition();
-            for (int bx = -16; bx <= 16; bx++)
+            for (int bx = -8; bx <= 8; bx++)
                 for (int by = -4; by <= 4; by++)
-                    for (int bz = -16; bz <= 16; bz++) {
+                    for (int bz = -8; bz <= 8; bz++) {
                         BlockPos pos = center.offset(bx, by, bz);
                         if (sl.getBlockState(pos).is(Blocks.FIRE))
                             sl.removeBlock(pos, false);
@@ -120,6 +121,7 @@ public final class DungeonEventHandler {
         if (!event.getEntity().getPersistentData().getBoolean("cartenon_statue")) return;
         event.setCanceled(true);
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
+            player.sendSystemMessage(Component.translatable("donjonmc.dungeon.cartenon.punished"));
             player.hurt(player.level().damageSources().genericKill(), Float.MAX_VALUE);
         }
     }

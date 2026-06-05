@@ -1,6 +1,9 @@
 package neoforge.donjonmc.raid;
 
+import io.redspace.ironsspellbooks.api.magic.MagicData;
+import io.redspace.ironsspellbooks.api.registry.AttributeRegistry;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -13,9 +16,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import neoforge.donjonmc.Donjonmc;
 import neoforge.donjonmc.player.ModAttachments;
-import neoforge.donjonmc.player.PlayerData;
 import neoforge.donjonmc.player.PlayerEventHandler;
 
 @EventBusSubscriber(modid = Donjonmc.MODID)
@@ -94,14 +97,21 @@ public final class RaidEventHandler {
                 .anyMatch(s -> s.distanceTo(player) <= 20.0);
 
             if (nearSupport) {
-                PlayerData data = player.getData(ModAttachments.PLAYER_DATA);
-                if (data.getMana() < data.maxMana()) {
-                    data.regenMana(1.0f);
-                    player.setData(ModAttachments.PLAYER_DATA, data);
-                    PlayerEventHandler.sendSyncPacket(player);
+                MagicData magicData = MagicData.getPlayerMagicData(player);
+                float maxMana = (float) player.getAttributeValue(AttributeRegistry.MAX_MANA);
+                if (magicData.getMana() < maxMana) {
+                    magicData.addMana(1.0f);
                 }
             }
         }
+    }
+
+    // ── Invite timeout cleanup (every 5 s) ────────────────────────────────────
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (event.getServer().getTickCount() % 100 != 0) return;
+        RaidManager.getInstance().cleanupExpiredInvites(event.getServer());
     }
 
     // ── Disconnect cleanup ────────────────────────────────────────────────────

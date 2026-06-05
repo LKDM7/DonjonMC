@@ -6,7 +6,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -86,12 +85,6 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
         if (level().isClientSide()) return;
 
         if (--ticksLeft <= 0) { discard(); return; }
-
-        // Exit mode: teleport nearby group members back to overworld
-        if (isExitPortal() && instanceId >= 0 && tickCount % 20 == 0
-                && level() instanceof ServerLevel sl) {
-            DungeonManager.getInstance().checkExitProximity(sl, this, instanceId);
-        }
     }
 
     // ── Right-click interaction ───────────────────────────────────────────────

@@ -154,7 +154,7 @@
   "donjonmc.dungeon.exited":                "§5[Système] §rVous avez quitté le donjon.",
   "donjonmc.dungeon.exit.not_inside":       "§c[Système] §rVous n'êtes pas dans un donjon.",
   "donjonmc.dungeon.boss":                  "Boss %s",
-  "donjonmc.dungeon.boss.defeated":         "§6[Système] §rLe boss a été vaincu ! La porte de sortie est apparue.",
+  "donjonmc.dungeon.boss.defeated":         "§6[Système] §rLe boss a été vaincu ! La porte de sortie est apparue. §eFaites clic droit§r sur le portail pour sortir.",
   "donjonmc.dungeon.double.triggered":      "§d[Système] §r§lDOUBLE DONJON§r détecté ! Une salle secrète s'est ouverte derrière le boss.",
   "donjonmc.dungeon.cartenon.name":         "Cartenon",
 
@@ -335,5 +335,9 @@
   "donjonmc.punishment.cooldown":        "§4[Système] §rVous avez déjà subi votre punition aujourd'hui. Reposez-vous.",
   "donjonmc.cmd.raid.rematch.no_history":"§c[Raid] §rAucun historique de groupe disponible.",
   "donjonmc.cmd.raid.rematch.already_in":"§c[Raid] §rVous êtes déjà dans un groupe.",
-  "donjonmc.cmd.raid.rematch.sent":      "§5[Raid] §rRevananche rapide lancée — invitations envoyées à votre ancien groupe."
+  "donjonmc.cmd.raid.rematch.sent":      "§5[Raid] §rRevananche rapide lancée — invitations envoyées à votre ancien groupe.",
+
+  "donjonmc.cmd.raid.new_leader":        "§5[Raid] §rVous êtes le nouveau chef du groupe.",
+  "donjonmc.cmd.raid.invite.expired":    "§c[Raid] §rL'invitation a expiré (60 secondes sans réponse).",
+  "donjonmc.dungeon.cartenon.punished":  "§4[Cartenon] §r§lOSER ATTAQUER LA STATUE...§r Le gardien vous écrase."
 }
