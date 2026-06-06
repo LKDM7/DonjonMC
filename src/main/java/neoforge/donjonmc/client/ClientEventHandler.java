@@ -30,6 +30,7 @@ public final class ClientEventHandler {
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(KeyBindings.OPEN_HUNTER_SCREEN);
+        event.register(KeyBindings.TOGGLE_QUEST_HUD_SIDE);
     }
 
 }
@@ -45,6 +46,10 @@ class ClientGameEventHandler {
 
         while (KeyBindings.OPEN_HUNTER_SCREEN.consumeClick()) {
             if (mc.screen == null) mc.setScreen(new HunterScreen());
+        }
+
+        while (KeyBindings.TOGGLE_QUEST_HUD_SIDE.consumeClick()) {
+            ClientDailyQuestCache.questHudLeft = !ClientDailyQuestCache.questHudLeft;
         }
     }
 

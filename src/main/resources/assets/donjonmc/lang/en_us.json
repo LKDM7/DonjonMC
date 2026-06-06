@@ -342,5 +342,20 @@
 
   "donjonmc.cmd.raid.new_leader":        "§5[Raid] §rYou are now the group leader.",
   "donjonmc.cmd.raid.invite.expired":    "§c[Raid] §rThe invitation has expired (60 seconds with no response).",
-  "donjonmc.dungeon.cartenon.punished":  "§4[Cartenon] §r§lYOU DARE ATTACK THE STATUE...§r The guardian crushes you."
+  "donjonmc.dungeon.cartenon.punished":  "§4[Cartenon] §r§lYOU DARE ATTACK THE STATUE...§r The guardian crushes you.",
+
+  "key.donjonmc.toggle_quest_hud_side":     "Toggle Quest HUD Side (Left/Right)",
+
+  "donjonmc.spell.rank_unlock":   "§5[System] §rYou have reached §eRank %s§r! You receive the §d%s§r scroll.",
+  "donjonmc.spell.class_unlock":  "§5[System] §rClass §e%s§r unlocked! You receive the §d%s§r scroll.",
+
+  "spell.donjonmc.rank_d_shockwave":  "Primal Shockwave",
+  "spell.donjonmc.rank_c_flame":      "Dungeon Flame",
+  "spell.donjonmc.rank_b_frost":      "Frozen Tempest",
+  "spell.donjonmc.rank_a_thunder":    "Hunter's Thunder",
+  "spell.donjonmc.rank_s_shadow_veil":"Shadow Veil",
+  "spell.donjonmc.tank_shield":       "Guardian's Rampart",
+  "spell.donjonmc.assassin_blink":    "Shadow Strike",
+  "spell.donjonmc.mage_arcane_deluge":"Arcane Deluge",
+  "spell.donjonmc.healer_aura":       "Life Aura"
 }

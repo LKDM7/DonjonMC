@@ -28,6 +28,7 @@ public final class ModAttachments {
         ATTACHMENT_TYPES.register("punishment_data", () ->
             AttachmentType.builder(PunishmentData::new)
                 .serialize(PunishmentData.CODEC)
+                .copyOnDeath()
                 .build()
         );
 
@@ -35,6 +36,7 @@ public final class ModAttachments {
         ATTACHMENT_TYPES.register("daily_quest", () ->
             AttachmentType.builder(DailyQuestData::new)
                 .serialize(DailyQuestData.CODEC)
+                .copyOnDeath()
                 .build()
         );
 

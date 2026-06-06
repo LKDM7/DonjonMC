@@ -14,6 +14,9 @@ public final class ClientDailyQuestCache {
     /** Préférence du joueur : afficher ou masquer le HUD quêtes. */
     public static boolean hudVisible       = true;
 
+    /** true = HUD ancré à gauche, false = à droite (défaut). */
+    public static boolean questHudLeft     = false;
+
     public static int[]     questIds       = new int[]{-1, -1, -1, -1};
     public static int[]     questProgress  = new int[4];
     public static int[]     questTargets   = new int[4];

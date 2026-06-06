@@ -13,7 +13,8 @@ public final class KeyBindings {
 
     private static final String CATEGORY = "key.categories.donjonmc";
 
-    public static final KeyMapping OPEN_HUNTER_SCREEN = key("open_hunter_screen", GLFW.GLFW_KEY_H);
+    public static final KeyMapping OPEN_HUNTER_SCREEN       = key("open_hunter_screen",       GLFW.GLFW_KEY_H);
+    public static final KeyMapping TOGGLE_QUEST_HUD_SIDE    = key("toggle_quest_hud_side",    GLFW.GLFW_KEY_UNKNOWN);
 
     private static KeyMapping key(String name, int glfwKey) {
         return new KeyMapping(

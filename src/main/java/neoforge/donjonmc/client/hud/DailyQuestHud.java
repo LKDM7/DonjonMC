@@ -90,7 +90,8 @@ public final class DailyQuestHud {
         int boxH           = 14 + (lineCount > 0 ? 1 + lineCount * 11 : 0);
 
         int punishH = (ClientPunishmentCache.remainingSeconds >= 0) ? 26 + 4 : 0;
-        int x = screenW - boxW - 6;
+        boolean left = ClientDailyQuestCache.questHudLeft;
+        int x = left ? 6 : screenW - boxW - 6;
         int y = screenH - boxH - 48 - punishH;
 
         // ── Fond + bordure ────────────────────────────────────────────────────

@@ -68,7 +68,13 @@ public final class DungeonHud {
         int boxH   = 26;
 
         int punishH = (ClientPunishmentCache.remainingSeconds >= 0) ? 26 + 4 : 0;
-        int questH  = (ClientDailyQuestCache.remainingSeconds  >= 0) ? 28 + 4 : 0;
+        int questH  = 0;
+        if (ClientDailyQuestCache.remainingSeconds >= 0 && !ClientDailyQuestCache.questHudLeft) {
+            int[] qids = ClientDailyQuestCache.questIds;
+            int lines = 0;
+            for (int id : qids) if (id >= 0) lines++;
+            questH = 14 + (lines > 0 ? 1 + lines * 11 : 0) + 4;
+        }
         int x = screenW - boxW - 6;
         int y = screenH - boxH - 48 - punishH - questH;
 

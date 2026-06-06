@@ -4,7 +4,8 @@
   "item.donjonmc.example_item": "Objet d'Exemple",
 
   "key.categories.donjonmc": "DonjonMC",
-  "key.donjonmc.open_hunter_screen":   "Ouvrir l'interface Chasseur",
+  "key.donjonmc.open_hunter_screen":        "Ouvrir l'interface Chasseur",
+  "key.donjonmc.toggle_quest_hud_side":     "Déplacer le HUD des quêtes (gauche/droite)",
   "key.donjonmc.skill_shockwave":       "Compétence : Fendant Dévastateur",
   "key.donjonmc.skill_shadow_step":     "Compétence : Pas de l'Ombre",
   "key.donjonmc.skill_iron_will":       "Compétence : Volonté de Fer",
@@ -330,6 +331,19 @@
 
   "donjonmc.dungeon.time_expired":       "§4[Système] §rLe donjon s'est effondré — temps écoulé. Vous êtes expulsé.",
   "donjonmc.system.rank_assessed":      "§5[Système] §rLe Système a évalué votre rang initial : §e[%s]§r. Votre destin commence.",
+
+  "donjonmc.spell.rank_unlock":   "§5[Système] §rVous avez atteint le §eRang %s§r ! Vous recevez le parchemin §d%s§r.",
+  "donjonmc.spell.class_unlock":  "§5[Système] §rClasse §e%s§r débloquée ! Vous recevez le parchemin §d%s§r.",
+
+  "spell.donjonmc.rank_d_shockwave":  "Onde Primitive",
+  "spell.donjonmc.rank_c_flame":      "Flamme du Donjon",
+  "spell.donjonmc.rank_b_frost":      "Tempête Givrée",
+  "spell.donjonmc.rank_a_thunder":    "Foudre du Chasseur",
+  "spell.donjonmc.rank_s_shadow_veil":"Voile des Ténèbres",
+  "spell.donjonmc.tank_shield":       "Rempart du Gardien",
+  "spell.donjonmc.assassin_blink":    "Frappe de l'Ombre",
+  "spell.donjonmc.mage_arcane_deluge":"Déluge Arcanique",
+  "spell.donjonmc.healer_aura":       "Aura de Vie",
 
   "donjonmc.dungeon.carry_bonus":        "§6[Système] §rBonus carry : §a+50 % XP§r reçu grâce à l'escorte d'un chasseur de rang supérieur.",
   "donjonmc.punishment.cooldown":        "§4[Système] §rVous avez déjà subi votre punition aujourd'hui. Reposez-vous.",
