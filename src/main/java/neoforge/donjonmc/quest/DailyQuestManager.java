@@ -38,20 +38,22 @@ public final class DailyQuestManager {
         DailyQuestData data = player.getData(ModAttachments.DAILY_QUEST);
         if (data.isDisabled()) return;
 
-        long currentDay = player.server.overworld().getGameTime() / 24000L;
+        long nowMs = System.currentTimeMillis();
+        boolean elapsed24h = nowMs - data.getLastAssignedDay() >= 24L * 60L * 60L * 1000L;
 
-        if (data.getLastAssignedDay() == currentDay && data.hasQuests()) {
+        if (!elapsed24h && data.hasQuests()) {
             if (data.isActive()) syncToPlayer(player, data);
             return;
         }
 
-        doAssign(player, data, currentDay);
+        doAssign(player, data, nowMs);
     }
 
-    private void doAssign(ServerPlayer player, DailyQuestData data, long currentDay) {
+    private void doAssign(ServerPlayer player, DailyQuestData data, long assignTimeMs) {
         UUID uid = player.getUUID();
+        long realDay = assignTimeMs / (24L * 60L * 60L * 1000L);
         long seed = uid.getMostSignificantBits() ^ uid.getLeastSignificantBits()
-                    ^ (currentDay * 0x9e3779b97f4a7c15L);
+                    ^ (realDay * 0x9e3779b97f4a7c15L);
         Random rng = new Random(seed);
 
         List<QuestDef> easy   = shuffle(QuestRegistry.byDifficulty(Difficulty.EASY),   rng);
@@ -67,7 +69,7 @@ public final class DailyQuestManager {
         Collections.shuffle(ids, rng);
 
         long now = player.server.overworld().getGameTime();
-        data.assign(ids, now, currentDay);
+        data.assign(ids, now, assignTimeMs);
         player.setData(ModAttachments.DAILY_QUEST, data);
 
         // Reset transient tracking
@@ -95,16 +97,13 @@ public final class DailyQuestManager {
 
     // Admin command: force assign same-day quests (same seed = same quests)
     public void forceAssign(ServerPlayer player) {
-        long currentDay = player.server.overworld().getGameTime() / 24000L;
-        doAssign(player, player.getData(ModAttachments.DAILY_QUEST), currentDay);
+        doAssign(player, player.getData(ModAttachments.DAILY_QUEST), System.currentTimeMillis());
     }
 
-    // OP command: force entirely new quests (offset seed by 1 to guarantee fresh set)
+    // OP command: force entirely new quests (shifts to next 24h window → different seed)
     public void forceAssignNewDay(ServerPlayer player) {
-        long currentDay = player.server.overworld().getGameTime() / 24000L;
-        // Use currentDay + offset so the quests differ from today's normal set
-        long forcedSeed = currentDay + player.getData(ModAttachments.DAILY_QUEST).getLastAssignedDay() + 1L;
-        doAssign(player, player.getData(ModAttachments.DAILY_QUEST), forcedSeed);
+        long nextWindow = System.currentTimeMillis() + 24L * 60L * 60L * 1000L;
+        doAssign(player, player.getData(ModAttachments.DAILY_QUEST), nextWindow);
     }
 
     // ── Progress API ───────────────────────────────────────────────────────────
@@ -315,9 +314,9 @@ public final class DailyQuestManager {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             DailyQuestData data = player.getData(ModAttachments.DAILY_QUEST);
 
-            // Auto-assign if needed (new in-game day)
-            long currentDay = now / 24000L;
-            if (data.getLastAssignedDay() < currentDay || !data.hasQuests()) {
+            // Auto-assign if 24h IRL have elapsed
+            long nowMs = System.currentTimeMillis();
+            if (nowMs - data.getLastAssignedDay() >= 24L * 60L * 60L * 1000L || !data.hasQuests()) {
                 assignIfNeeded(player);
                 data = player.getData(ModAttachments.DAILY_QUEST);
             }
