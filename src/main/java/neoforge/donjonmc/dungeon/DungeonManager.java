@@ -70,7 +70,7 @@ public final class DungeonManager {
         int dz = (overworld.random.nextBoolean() ? 1 : -1) * (80 + overworld.random.nextInt(170));
         int px = target.getBlockX() + dx;
         int pz = target.getBlockZ() + dz;
-        int py = overworld.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, px, pz);
+        int py = Math.max(1, overworld.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, px, pz));
 
         // S'assurer que le bloc au niveau du portail est accessible (pas sous un surplomb)
         BlockPos candidate = new BlockPos(px, py, pz);
