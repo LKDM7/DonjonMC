@@ -81,8 +81,10 @@ public final class RaidManager {
         return group.getMembers().stream()
             .map(uuid -> killer.server.getPlayerList().getPlayer(uuid))
             .filter(Objects::nonNull)
-            .filter(p -> p.getUUID().equals(killer.getUUID()) || p.distanceTo(killer) <= radius)
-            .filter(this::isActive)
+            // Le tueur est TOUJOURS inclus (combat sur place ne met pas à jour l'anti-AFK).
+            // Les autres membres doivent être proches ET actifs.
+            .filter(p -> p.getUUID().equals(killer.getUUID())
+                    || (p.distanceTo(killer) <= radius && isActive(p)))
             .collect(Collectors.toList());
     }
 
