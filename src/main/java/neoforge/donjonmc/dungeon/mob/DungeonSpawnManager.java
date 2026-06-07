@@ -71,7 +71,8 @@ public final class DungeonSpawnManager {
         List<EntityType<? extends DungeonMob>> pool = THEME_MOBS.getOrDefault(theme,
                 List.of(DungeonMobRegistry.GOBLIN.get()));
         RankScale scale = RANK_SCALE.getOrDefault(rank, RANK_SCALE.get(DungeonRank.D));
-        int count = scale.minMobs() + level.random.nextInt(scale.maxMobs() - scale.minMobs() + 1);
+        int baseCount = scale.minMobs() + level.random.nextInt(scale.maxMobs() - scale.minMobs() + 1);
+        int count = Math.round(baseCount * 1.5f); // +50 % de mobs
         for (int i = 0; i < count; i++) {
             EntityType<? extends DungeonMob> type = pool.get(level.random.nextInt(pool.size()));
             spawnAt(level, type, randomRoomPos(level, roomOrigin), scale, instanceId, false, rank);

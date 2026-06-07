@@ -523,7 +523,17 @@ public final class DungeonManager {
             .filter(java.util.Objects::nonNull)
             .collect(java.util.stream.Collectors.toList());
 
-        long pool  = instance.getRank().xpReward;
+        // Bonus de vitesse : +50 % si terminé dans le 1er tiers du temps limite,
+        // +25 % dans le 2e tiers, +0 % au-delà.
+        long limitTicks   = (long) instance.getRank().timeLimitSeconds * 20L;
+        long elapsedTicks = dungeonLevel.getGameTime() - instance.getStartTick();
+        double speedBonus;
+        if      (limitTicks > 0 && elapsedTicks * 3L <  limitTicks)      speedBonus = 0.50;
+        else if (limitTicks > 0 && elapsedTicks * 3L <  limitTicks * 2L) speedBonus = 0.25;
+        else                                                             speedBonus = 0.0;
+        final int speedBonusPct = (int) Math.round(speedBonus * 100);
+
+        long pool  = Math.round(instance.getRank().xpReward * (1.0 + speedBonus));
         int  count = Math.max(1, alive.size());
         long share = pool / count;
 
@@ -559,6 +569,10 @@ public final class DungeonManager {
                 }
             }
             PlayerEventHandler.addXpDirect(sp, xp);
+            if (speedBonusPct > 0) {
+                sp.sendSystemMessage(Component.translatable(
+                    "donjonmc.dungeon.speed_bonus", speedBonusPct));
+            }
         }
     }
 

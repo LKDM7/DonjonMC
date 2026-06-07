@@ -350,6 +350,7 @@
   "spell.donjonmc.healer_aura":       "Aura de Vie",
 
   "donjonmc.dungeon.carry_bonus":        "§6[Système] §rBonus carry : §a+50 % XP§r reçu grâce à l'escorte d'un chasseur de rang supérieur.",
+  "donjonmc.dungeon.speed_bonus":        "§6[Système] §rBonus de vitesse : §a+%s %% XP§r pour avoir terminé le donjon rapidement !",
   "donjonmc.punishment.cooldown":        "§4[Système] §rVous avez déjà subi votre punition aujourd'hui. Reposez-vous.",
   "donjonmc.cmd.raid.rematch.no_history":"§c[Raid] §rAucun historique de groupe disponible.",
   "donjonmc.cmd.raid.rematch.already_in":"§c[Raid] §rVous êtes déjà dans un groupe.",

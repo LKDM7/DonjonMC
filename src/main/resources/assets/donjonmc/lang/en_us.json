@@ -339,6 +339,7 @@
   "donjonmc.system.rank_assessed":      "§5[System] §rThe System has assessed your initial rank: §e[%s]§r. Your destiny begins.",
 
   "donjonmc.dungeon.carry_bonus":        "§6[System] §rCarry bonus: §a+50% XP§r received for being escorted by a higher-ranked hunter.",
+  "donjonmc.dungeon.speed_bonus":        "§6[System] §rSpeed bonus: §a+%s%% XP§r for clearing the dungeon quickly!",
   "donjonmc.punishment.cooldown":        "§4[System] §rYou have already endured your punishment today. Rest.",
   "donjonmc.cmd.raid.rematch.no_history":"§c[Raid] §rNo group history to rematch from.",
   "donjonmc.cmd.raid.rematch.already_in":"§c[Raid] §rYou are already in a group.",

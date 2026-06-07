@@ -72,11 +72,11 @@ public final class PlayerEventHandler {
         if (mob.getPersistentData().getBoolean("dungeon_boss")) return 0L; // handled by onBossKilled
         int rankOrd = mob.getPersistentData().getInt("dungeon_rank_ord");
         return switch (DungeonRank.fromOrdinal(rankOrd)) {
-            case D -> 8L;
-            case C -> 20L;
-            case B -> 50L;
-            case A -> 120L;
-            case S -> 300L;
+            case D -> 16L;
+            case C -> 40L;
+            case B -> 100L;
+            case A -> 240L;
+            case S -> 600L;
         };
     }
 
@@ -337,11 +337,11 @@ public final class PlayerEventHandler {
         }
 
         // Régénération mana via Iron's Spells 'n Spellbooks MagicData
-        // 2.0 + 0.08×Intel → regen/s (max ~6/s à intel 50) ; ×2 pour le Guérisseur
+        // 1.0 + 0.08×Intel → regen/s (max ~5/s à intel 50) ; ×2 pour le Guérisseur
         MagicData magicData = MagicData.getPlayerMagicData(player);
         float maxMana = (float) player.getAttributeValue(AttributeRegistry.MAX_MANA);
         if (magicData.getMana() < maxMana) {
-            float rate = 2.0f + data.getIntelligence() * 0.08f;
+            float rate = 1.0f + data.getIntelligence() * 0.08f;
             if (data.getPlayerClass() == PlayerClass.HEALER) rate *= 2f;
             magicData.addMana(rate);
         }
