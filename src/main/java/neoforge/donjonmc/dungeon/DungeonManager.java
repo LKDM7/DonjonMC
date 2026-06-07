@@ -558,11 +558,19 @@ public final class DungeonManager {
             return;
         }
 
-        playerToInstance.remove(player.getUUID());
+        Integer instId = playerToInstance.remove(player.getUUID());
+        entryGraceTick.remove(player.getUUID());
+        DungeonInstance inst = instId != null ? activeInstances.get(instId) : null;
+        // Retire le joueur de la boss bar, sinon elle reste affichée après la sortie
+        if (inst != null && inst.getBossBar() != null) {
+            inst.getBossBar().removePlayer(player);
+        }
         clearDungeonData(player);
         PacketDistributor.sendToPlayer(player, new SyncDungeonHudPacket(-1, 0L, 0, 0L));
         teleportTo(player, player.server.overworld(), returnPos);
         player.sendSystemMessage(Component.translatable("donjonmc.dungeon.exited"));
+
+        if (inst != null) cleanupIfEmpty(instId, inst);
     }
 
     public void tryJoinGroupDungeon(ServerPlayer player) {
