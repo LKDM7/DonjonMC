@@ -63,6 +63,16 @@ public final class DungeonGenerator {
     private record RoomEntry(double x, double y, double z, String theme) {}
 
     public static GenerationResult generate(ServerLevel level, BlockPos origin, DungeonRank rank, int instanceId) {
+        // Pre-load all chunks in the generation zone — without this, setBlock and addFreshEntity
+        // silently fail when called before players are teleported (chunks unloaded).
+        int minCX = (origin.getX() - 200) >> 4;
+        int maxCX = (origin.getX() + 200) >> 4;
+        int minCZ = (origin.getZ() - 200) >> 4;
+        int maxCZ = (origin.getZ() + 200) >> 4;
+        for (int cx = minCX; cx <= maxCX; cx++)
+            for (int cz = minCZ; cz <= maxCZ; cz++)
+                level.getChunk(cx, cz);
+
         RandomSource rng = level.random;
 
         Direction dir    = Direction.NORTH;
