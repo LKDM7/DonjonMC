@@ -4,6 +4,9 @@ public final class LevelHelper {
 
     private LevelHelper() {}
 
+    /** Niveau maximum atteignable. National = 80+ ; on laisse une marge jusqu'à 100. */
+    public static final int MAX_LEVEL = 100;
+
     /**
      * XP requis pour passer du niveau {@code currentLevel} au suivant.
      * Formule : 100 * (currentLevel + 1)^1.8

@@ -272,14 +272,14 @@ public final class PlayerEventHandler {
 
     private static void giveXpToPlayer(ServerPlayer player, long amount) {
         PlayerData data = player.getData(ModAttachments.PLAYER_DATA);
-        if (data.getLevel() >= 60) return;
+        if (data.getLevel() >= LevelHelper.MAX_LEVEL) return;
 
         // Quête GAIN_MOD_XP
         neoforge.donjonmc.quest.DailyQuestManager.getInstance().onModXpGained(player, amount);
 
         int levelBefore = data.getLevel();
         long currentXp  = data.getXp() + amount;
-        while (currentXp >= LevelHelper.xpRequired(data.getLevel()) && data.getLevel() < 60) {
+        while (currentXp >= LevelHelper.xpRequired(data.getLevel()) && data.getLevel() < LevelHelper.MAX_LEVEL) {
             currentXp -= LevelHelper.xpRequired(data.getLevel());
             levelUp(player, data);
         }
