@@ -158,6 +158,8 @@
   "donjonmc.dungeon.exit.not_inside":       "§c[System] §rYou are not inside a dungeon.",
   "donjonmc.dungeon.boss":                  "%s Boss",
   "donjonmc.dungeon.boss.defeated":         "§6[System] §rThe boss has been defeated! The exit gate has appeared. §eRight-click§r the portal to leave.",
+  "donjonmc.dungeon.exit_button":           "§a§l[Leave dungeon]",
+  "donjonmc.dungeon.exit_button.hover":     "§7Click to leave the dungeon immediately.",
   "donjonmc.dungeon.double.triggered":      "§d[System] §r§lDOUBLE DUNGEON§r detected! A hidden room has opened beyond the boss.",
   "donjonmc.dungeon.cartenon.name":         "Cartenon",
 

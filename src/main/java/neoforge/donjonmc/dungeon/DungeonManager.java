@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -479,10 +480,20 @@ public final class DungeonManager {
         exit.setAsExit(instanceId);
         level.addFreshEntity(exit);
 
+        // Bouton cliquable pour sortir immédiatement du donjon (en plus du portail de sortie)
+        Component exitBtn = Component.literal(" ")
+            .append(Component.translatable("donjonmc.dungeon.exit_button")
+                .withStyle(s -> s
+                    .withClickEvent(new ClickEvent(
+                        ClickEvent.Action.RUN_COMMAND, "/donjonmc dungeon exit"))
+                    .withHoverEvent(new HoverEvent(
+                        HoverEvent.Action.SHOW_TEXT,
+                        Component.translatable("donjonmc.dungeon.exit_button.hover")))));
+        Component defeatedMsg = Component.translatable("donjonmc.dungeon.boss.defeated").append(exitBtn);
         for (UUID uid : (inst != null ? inst.getPlayerIds() : Set.<UUID>of())) {
             ServerPlayer sp = level.getServer().getPlayerList().getPlayer(uid);
             if (sp != null)
-                sp.sendSystemMessage(Component.translatable("donjonmc.dungeon.boss.defeated"));
+                sp.sendSystemMessage(defeatedMsg);
         }
     }
 

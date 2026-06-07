@@ -156,6 +156,8 @@
   "donjonmc.dungeon.exit.not_inside":       "§c[Système] §rVous n'êtes pas dans un donjon.",
   "donjonmc.dungeon.boss":                  "Boss %s",
   "donjonmc.dungeon.boss.defeated":         "§6[Système] §rLe boss a été vaincu ! La porte de sortie est apparue. §eFaites clic droit§r sur le portail pour sortir.",
+  "donjonmc.dungeon.exit_button":           "§a§l[Sortir du donjon]",
+  "donjonmc.dungeon.exit_button.hover":     "§7Cliquez pour quitter le donjon immédiatement.",
   "donjonmc.dungeon.double.triggered":      "§d[Système] §r§lDOUBLE DONJON§r détecté ! Une salle secrète s'est ouverte derrière le boss.",
   "donjonmc.dungeon.cartenon.name":         "Cartenon",
 
