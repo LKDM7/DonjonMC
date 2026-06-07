@@ -8,6 +8,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
@@ -63,6 +64,14 @@ public final class DungeonEventHandler {
         }
     }
 
+    /** Cancel item drops when a player dies inside the dungeon dimension. */
+    @SubscribeEvent
+    public static void onDungeonPlayerDrops(LivingDropsEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!player.level().dimension().equals(DungeonManager.DUNGEON_DIMENSION)) return;
+        event.setCanceled(true);
+    }
+
     /** Player death inside the dungeon dimension. */
     @SubscribeEvent
     public static void onPlayerDeath(LivingDeathEvent event) {
@@ -77,7 +86,11 @@ public final class DungeonEventHandler {
         if (!event.isWasDeath()) return;
         if (!(event.getEntity() instanceof ServerPlayer sp)) return;
         if (!(event.getOriginal() instanceof ServerPlayer original)) return;
-        sp.setData(ModAttachments.DUNGEON_SAVE, original.getData(ModAttachments.DUNGEON_SAVE));
+        DungeonSaveData dungeonData = original.getData(ModAttachments.DUNGEON_SAVE);
+        sp.setData(ModAttachments.DUNGEON_SAVE, dungeonData);
+        if (dungeonData.isActive() && dungeonData.isDied()) {
+            sp.getInventory().replaceWith(original.getInventory());
+        }
         DungeonManager.getInstance().returnIfStranded(sp);
     }
 
