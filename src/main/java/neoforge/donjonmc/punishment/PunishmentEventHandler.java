@@ -10,6 +10,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.CommandEvent;
 import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -81,6 +82,17 @@ public final class PunishmentEventHandler {
 
         event.setCanceled(true);
         sp.sendSystemMessage(Component.translatable("donjonmc.punishment.no_escape"));
+    }
+
+    // Bloque tout placement de blocs dans la dimension de punition
+    @SubscribeEvent
+    public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel sl)) return;
+        if (!sl.dimension().equals(PunishmentManager.PUNISHMENT_DIMENSION)) return;
+        event.setCanceled(true);
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            sp.sendSystemMessage(Component.translatable("donjonmc.punishment.no_place"));
+        }
     }
 
     /** Seul le SandWorm peut rester dans la dimension de punition. */
