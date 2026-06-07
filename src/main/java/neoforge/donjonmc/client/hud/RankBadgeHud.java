@@ -34,7 +34,7 @@ public final class RankBadgeHud {
         int boxH   = 14;
 
         int x = 6;
-        int y = 6;
+        int y = 20; // descendu pour ne pas chevaucher le HUD d'un autre mod en haut à gauche
 
         // Fond
         g.fill(x, y, x + boxW, y + boxH, C_BG);

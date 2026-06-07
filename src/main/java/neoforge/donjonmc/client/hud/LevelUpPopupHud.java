@@ -50,16 +50,53 @@ public final class LevelUpPopupHud {
         int x     = screenW / 2 - boxW / 2;
         int y     = 20;
 
-        int bg     = (a << 24) | 0x120820;
-        int border = (a << 24) | 0x8800FF;
-        int text   = (a << 24) | 0xCC88FF;
+        // Palette « Système » cyan + alpha animé
+        int bg     = (a << 24) | 0x0A1428;
+        int glow   = ((a / 4) << 24) | 0x2FD8FF;
+        int border = (a << 24) | 0x2FD8FF;
+        int accent = (a << 24) | 0x4FE3FF;
+        int text   = (a << 24) | 0xE6F4FF;
 
+        // Animation « pop » : zoom à l'apparition (ease-out), puis stable
+        float scale = 1f;
+        if (elapsed < FADE_MS) {
+            float t = (float) elapsed / FADE_MS;
+            scale = 0.7f + 0.3f * (1f - (1f - t) * (1f - t)); // 0.7 → 1.0
+        }
+
+        var pose = g.pose();
+        pose.pushPose();
+        float cxp = screenW / 2f, cyp = y + boxH / 2f;
+        pose.translate(cxp, cyp, 0);
+        pose.scale(scale, scale, 1f);
+        pose.translate(-cxp, -cyp, 0);
+
+        // Fond + halo + bordure
         g.fill(x, y, x + boxW, y + boxH, bg);
-        g.fill(x,           y,          x + boxW, y + 1,        border);
-        g.fill(x,           y + boxH-1, x + boxW, y + boxH,     border);
-        g.fill(x,           y,          x + 1,    y + boxH,     border);
-        g.fill(x + boxW-1,  y,          x + boxW, y + boxH,     border);
+        box(g, x - 1, y - 1, boxW + 2, boxH + 2, glow);
+        box(g, x, y, boxW, boxH, border);
+
+        // Accents cyan aux coins
+        int n = 4;
+        g.fill(x, y, x + n, y + 1, accent);
+        g.fill(x, y, x + 1, y + n, accent);
+        g.fill(x + boxW - n, y, x + boxW, y + 1, accent);
+        g.fill(x + boxW - 1, y, x + boxW, y + n, accent);
+        g.fill(x, y + boxH - 1, x + n, y + boxH, accent);
+        g.fill(x, y + boxH - n, x + 1, y + boxH, accent);
+        g.fill(x + boxW - n, y + boxH - 1, x + boxW, y + boxH, accent);
+        g.fill(x + boxW - 1, y + boxH - n, x + boxW, y + boxH, accent);
 
         g.drawString(mc.font, popupText, x + 12, y + 5, text, false);
+
+        pose.popPose();
+    }
+
+    /** Cadre 1px. */
+    private static void box(GuiGraphics g, int x, int y, int w, int h, int color) {
+        g.fill(x,         y,         x + w,     y + 1,     color);
+        g.fill(x,         y + h - 1, x + w,     y + h,     color);
+        g.fill(x,         y,         x + 1,     y + h,     color);
+        g.fill(x + w - 1, y,         x + w,     y + h,     color);
     }
 }

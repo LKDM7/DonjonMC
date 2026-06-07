@@ -19,8 +19,8 @@ import neoforge.donjonmc.raid.RaidRole;
 public class HunterScreen extends Screen {
 
     // Dimensions du panneau
-    private static final int W = 248;
-    private static final int H = 192;
+    private static final int W = 280;
+    private static final int H = 220;
 
     // Layout
     private static final int TAB_Y         = 21;
@@ -30,21 +30,25 @@ public class HunterScreen extends Screen {
     private static final int STATS_FIRST_Y  = STATS_HEADER_Y + 24; // = 73
     private static final int STATS_ROW_H   = 14;
 
-    // Palette
-    private static final int C_BG      = 0x90000000;
-    private static final int C_PANEL   = 0xFF0A0A1E;
-    private static final int C_BORDER  = 0xFF7D3C98;
-    private static final int C_TAB_ON  = 0xFF1A0040;
-    private static final int C_TAB_OFF = 0xFF111140;
-    private static final int C_TAB_HOV = 0xFF151560;
-    private static final int C_XP_BG  = 0xFF2C2C2C;
-    private static final int C_XP_FG  = 0xFF8E44AD;
-    private static final int C_TEXT   = 0xFFEAEAEA;
-    private static final int C_DIM    = 0xFF888888;
-    private static final int C_GOLD   = 0xFFFFD700;
-    private static final int C_ACCENT = 0xFF9B59B6;
-    private static final int C_PLUS   = 0xFF1E6B3E;
-    private static final int C_PLUS_H = 0xFF27AE60;
+    // Palette — "Système" Solo Leveling (bleu nuit + glow cyan)
+    private static final int C_BG        = 0xC0000814; // overlay écran
+    private static final int C_PANEL_TOP = 0xF00B1730; // dégradé panneau (haut)
+    private static final int C_PANEL_BOT = 0xF005091A; // dégradé panneau (bas)
+    private static final int C_PANEL     = 0xF00A1428; // aplat de secours
+    private static final int C_BORDER    = 0xFF2FD8FF; // bordure cyan vive
+    private static final int C_GLOW      = 0x402FD8FF; // lueur cyan (alpha bas)
+    private static final int C_TAB_ON    = 0xFF0E2A44;
+    private static final int C_TAB_OFF   = 0xFF0A1626;
+    private static final int C_TAB_HOV   = 0xFF123A5C;
+    private static final int C_XP_BG     = 0xFF081626;
+    private static final int C_XP_FG     = 0xFF1E9AD0; // bas du dégradé de barre
+    private static final int C_XP_FG2    = 0xFF7BE9FF; // haut du dégradé de barre
+    private static final int C_TEXT      = 0xFFE6F4FF;
+    private static final int C_DIM       = 0xFF6E8CA8;
+    private static final int C_GOLD      = 0xFFFFD86B;
+    private static final int C_ACCENT    = 0xFF4FE3FF; // cyan accent (titre, soulignés)
+    private static final int C_PLUS      = 0xFF0E5A6E;
+    private static final int C_PLUS_H    = 0xFF1A86A8;
 
     private int activeTab = 0;
     private int left, top;
@@ -65,6 +69,10 @@ public class HunterScreen extends Screen {
     private int          raidRematchInGroupX = -1;
     private final java.util.List<String>  raidInviteNames = new java.util.ArrayList<>();
     private final java.util.List<Integer> raidInviteY     = new java.util.ArrayList<>();
+    // Défilement de la liste d'invitation
+    private int raidInviteScroll    = 0;
+    private int raidInviteAreaTop    = -1;
+    private int raidInviteAreaBottom = -1;
 
     public HunterScreen() {
         super(Component.empty());
@@ -98,11 +106,13 @@ public class HunterScreen extends Screen {
         // Fond semi-transparent sur tout l'écran
         g.fill(0, 0, this.width, this.height, C_BG);
 
-        // Panneau principal
-        g.fill(left, top, left + W, top + H, C_PANEL);
-        border(g, left, top, W, H, C_BORDER);
+        // Panneau principal : dégradé bleu nuit + lueur + bordure cyan + accents de coin
+        g.fillGradient(left, top, left + W, top + H, C_PANEL_TOP, C_PANEL_BOT);
+        glowBorder(g, left, top, W, H);
+        corners(g, left, top, W, H);
 
-        g.drawCenteredString(this.font, t("donjonmc.gui.title"), left + W / 2, top + 9, C_ACCENT);
+        // Titre "Système" avec losange
+        g.drawCenteredString(this.font, "◈ " + t("donjonmc.gui.title"), left + W / 2, top + 9, C_ACCENT);
         g.fill(left + 1, top + 19, left + W - 1, top + 20, C_BORDER);
 
         renderTabs(g, mx, my);
@@ -169,12 +179,8 @@ public class HunterScreen extends Screen {
         g.drawString(this.font, t("donjonmc.gui.profile.xp"), cx, y, C_DIM);
         y += 11;
         int barX = cx, barW = W - 24;
-        g.fill(barX, y, barX + barW, y + 8, C_XP_BG);
-        if (xpMax > 0) {
-            int filled = (int) (barW * Math.min(xp, xpMax) / (double) xpMax);
-            if (filled > 0) g.fill(barX, y, barX + filled, y + 8, C_XP_FG);
-        }
-        border(g, barX, y, barW, 8, C_BORDER);
+        double xpFrac = xpMax > 0 ? (double) Math.min(xp, xpMax) / xpMax : 0;
+        glowBar(g, barX, y, barW, 8, xpFrac, C_XP_FG2, C_XP_FG);
         y += 11;
         g.drawCenteredString(this.font, xp + " / " + xpMax, left + W / 2, y, C_DIM);
 
@@ -501,26 +507,47 @@ public class HunterScreen extends Screen {
             y += 13;
         }
 
-        // ── Invite list (leader only) ─────────────────────────────────────────
+        // ── Invite list (leader only) — viewport scrollable ───────────────────
+        raidInviteAreaTop = raidInviteAreaBottom = -1;
         if (ClientRaidCache.isLeader && !ClientRaidCache.invitablePlayers.isEmpty()) {
+            java.util.List<String> all = ClientRaidCache.invitablePlayers;
+
             g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
             y += 5;
-            g.drawString(this.font, t("donjonmc.raid.invite_player"), cx, y, C_DIM);
+            g.drawString(this.font, t("donjonmc.raid.invite_player") + " (" + all.size() + ")", cx, y, C_DIM);
             y += 11;
 
-            for (String pName : ClientRaidCache.invitablePlayers) {
+            final int rowH       = 12;
+            int areaTop          = y;
+            int areaBottom       = top + H - 20; // réserve la place pour les boutons d'action
+            int visible          = Math.max(1, (areaBottom - areaTop) / rowH);
+            int maxScroll        = Math.max(0, all.size() - visible);
+            if (raidInviteScroll > maxScroll) raidInviteScroll = maxScroll;
+            if (raidInviteScroll < 0)         raidInviteScroll = 0;
+            raidInviteAreaTop    = areaTop;
+            raidInviteAreaBottom = areaBottom;
+
+            int end = Math.min(all.size(), raidInviteScroll + visible);
+            for (int i = raidInviteScroll; i < end; i++) {
+                String pName = all.get(i);
                 raidInviteNames.add(pName);
                 raidInviteY.add(y);
                 g.drawString(this.font, pName, cx, y, C_TEXT);
                 int ibx = left + W - 12 - 40;
                 boolean hov = mx >= ibx && mx < ibx + 40 && my >= y && my < y + 10;
                 g.fill(ibx, y, ibx + 40, y + 10, hov ? C_PLUS_H : C_PLUS);
-                border(g, ibx, y, 40, 10, 0xFF145A32);
+                border(g, ibx, y, 40, 10, C_BORDER);
                 g.drawCenteredString(this.font, t("donjonmc.raid.invite"), ibx + 20, y + 1, 0xFFFFFFFF);
-                y += 12;
-                if (y > top + H - 30) { g.drawString(this.font, "...", cx, y, C_DIM); break; }
+                y += rowH;
             }
-            y += 2;
+
+            // Indicateurs de défilement (molette)
+            if (raidInviteScroll > 0)
+                g.drawString(this.font, "▲", left + W - 20, areaTop, C_ACCENT);
+            if (end < all.size())
+                g.drawString(this.font, "▼", left + W - 20, areaBottom - 8, C_ACCENT);
+
+            y = areaBottom + 2; // boutons d'action ancrés en bas
         } else {
             y += 4;
         }
@@ -660,6 +687,19 @@ public class HunterScreen extends Screen {
     }
 
     @Override
+    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        // Défilement de la liste d'invitation (onglet Raid)
+        if (activeTab == 4 && raidInviteAreaTop >= 0
+                && my >= raidInviteAreaTop && my <= raidInviteAreaBottom) {
+            if (dy > 0)      raidInviteScroll--;
+            else if (dy < 0) raidInviteScroll++;
+            if (raidInviteScroll < 0) raidInviteScroll = 0;
+            return true; // le clamp haut est appliqué au rendu
+        }
+        return super.mouseScrolled(mx, my, dx, dy);
+    }
+
+    @Override
     public boolean isPauseScreen() { return false; }
 
     // ─── Utilitaires ─────────────────────────────────────────────────────────
@@ -669,5 +709,39 @@ public class HunterScreen extends Screen {
         g.fill(x,         y + h - 1, x + w,     y + h,     color);
         g.fill(x,         y,         x + 1,     y + h,     color);
         g.fill(x + w - 1, y,         x + w,     y + h,     color);
+    }
+
+    /** Bordure cyan avec lueur externe (effet « système »). */
+    private void glowBorder(GuiGraphics g, int x, int y, int w, int h) {
+        border(g, x - 1, y - 1, w + 2, h + 2, C_GLOW); // halo
+        border(g, x, y, w, h, C_BORDER);               // trait net
+    }
+
+    /** Accents cyan en L aux 4 coins du panneau. */
+    private void corners(GuiGraphics g, int x, int y, int w, int h) {
+        int n = 6; // longueur des branches
+        // haut-gauche
+        g.fill(x, y, x + n, y + 1, C_ACCENT);
+        g.fill(x, y, x + 1, y + n, C_ACCENT);
+        // haut-droite
+        g.fill(x + w - n, y, x + w, y + 1, C_ACCENT);
+        g.fill(x + w - 1, y, x + w, y + n, C_ACCENT);
+        // bas-gauche
+        g.fill(x, y + h - 1, x + n, y + h, C_ACCENT);
+        g.fill(x, y + h - n, x + 1, y + h, C_ACCENT);
+        // bas-droite
+        g.fill(x + w - n, y + h - 1, x + w, y + h, C_ACCENT);
+        g.fill(x + w - 1, y + h - n, x + w, y + h, C_ACCENT);
+    }
+
+    /** Barre de progression avec dégradé vertical + liseré de lueur. */
+    private void glowBar(GuiGraphics g, int x, int y, int w, int h, double frac, int fgTop, int fgBot) {
+        g.fill(x, y, x + w, y + h, C_XP_BG);
+        int filled = (int) (w * Math.max(0.0, Math.min(1.0, frac)));
+        if (filled > 0) {
+            g.fillGradient(x, y, x + filled, y + h, fgTop, fgBot);
+            g.fill(x, y, x + filled, y + 1, fgTop); // liseré lumineux en haut
+        }
+        border(g, x, y, w, h, C_BORDER);
     }
 }
