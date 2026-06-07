@@ -16,8 +16,10 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.portal.DimensionTransition;
+import neoforge.donjonmc.dungeon.mob.DungeonMob;
 import net.neoforged.neoforge.network.PacketDistributor;
 import neoforge.donjonmc.Donjonmc;
 import neoforge.donjonmc.network.SyncDungeonHudPacket;
@@ -50,11 +52,14 @@ public final class DungeonManager {
     private final Map<UUID, Long> entryGraceTick = new HashMap<>();
 
     private final AtomicInteger idCounter = new AtomicInteger(0);
+    /** IDs (= zones) d'instances terminées, réutilisables pour éviter d'étendre la dimension à l'infini. */
+    private final Deque<Integer> freeIds = new ArrayDeque<>();
 
     public void clear() {
         activeInstances.clear();
         playerToInstance.clear();
         entryGraceTick.clear();
+        freeIds.clear();
         idCounter.set(0);
     }
 
@@ -166,7 +171,8 @@ public final class DungeonManager {
             return;
         }
 
-        int id = idCounter.getAndIncrement();
+        // Réutilise une zone libérée si disponible (les blocs y seront réécrits par la génération)
+        int id = freeIds.isEmpty() ? idCounter.getAndIncrement() : freeIds.poll();
         long startTick = server.overworld().getGameTime();
 
         DungeonInstance instance = new DungeonInstance(
@@ -274,7 +280,7 @@ public final class DungeonManager {
                 if (sp != null)
                     sp.sendSystemMessage(Component.translatable("donjonmc.dungeon.defeat"));
             }
-            activeInstances.remove(instId);
+            endInstance(server, instId);
         }
     }
 
@@ -314,6 +320,8 @@ public final class DungeonManager {
             // Same server session — player just reconnected while instance is still live
             existing.addMember(player.getUUID());
             playerToInstance.put(player.getUUID(), instId);
+            // Réaffiche la boss bar (perdue à la déconnexion)
+            if (existing.getBossBar() != null) existing.getBossBar().addPlayer(player);
         } else {
             // Server restarted — recreate minimal instance so tracking works
             Set<UUID> members = new HashSet<>();
@@ -432,7 +440,7 @@ public final class DungeonManager {
                 clearDungeonData(sp);
             }
         }
-        activeInstances.remove(instanceId);
+        endInstance(server, instanceId);
     }
 
     // ── Boss killed ───────────────────────────────────────────────────────────
@@ -581,7 +589,7 @@ public final class DungeonManager {
         teleportTo(player, player.server.overworld(), returnPos);
         player.sendSystemMessage(Component.translatable("donjonmc.dungeon.exited"));
 
-        if (inst != null) cleanupIfEmpty(instId, inst);
+        if (inst != null) cleanupIfEmpty(player.server, instId, inst);
     }
 
     public void tryJoinGroupDungeon(ServerPlayer player) {
@@ -665,7 +673,7 @@ public final class DungeonManager {
             exitPlayer(sp, instance);
         }
 
-        cleanupIfEmpty(instanceId, instance);
+        cleanupIfEmpty(server, instanceId, instance);
     }
 
     public void exitPlayerViaPortal(ServerPlayer sp, int instanceId) {
@@ -673,7 +681,7 @@ public final class DungeonManager {
         if (instance == null) return;
         if (!sp.level().dimension().equals(DUNGEON_DIMENSION)) return;
         exitPlayer(sp, instance);
-        cleanupIfEmpty(instanceId, instance);
+        cleanupIfEmpty(sp.server, instanceId, instance);
     }
 
     private void exitPlayer(ServerPlayer sp, DungeonInstance instance) {
@@ -686,13 +694,39 @@ public final class DungeonManager {
         sp.sendSystemMessage(Component.translatable("donjonmc.dungeon.exited"));
     }
 
-    private void cleanupIfEmpty(int instanceId, DungeonInstance instance) {
+    private void cleanupIfEmpty(MinecraftServer server, int instanceId, DungeonInstance instance) {
         boolean allGone = instance.getPlayerIds().stream()
             .noneMatch(uid -> playerToInstance.containsKey(uid));
-        if (allGone) {
-            if (instance.getBossBar() != null) instance.getBossBar().removeAllPlayers();
-            activeInstances.remove(instanceId);
+        if (allGone) endInstance(server, instanceId);
+    }
+
+    /**
+     * Termine définitivement une instance : retire la boss bar, supprime les mobs restants
+     * de la zone et libère l'ID/zone pour réutilisation (évite la croissance infinie de la
+     * dimension donjon sur le disque).
+     */
+    private void endInstance(MinecraftServer server, int instanceId) {
+        DungeonInstance instance = activeInstances.remove(instanceId);
+        if (instance == null) return;
+
+        if (instance.getBossBar() != null) {
+            instance.getBossBar().removeAllPlayers();
+            instance.setBossBar(null);
         }
+
+        ServerLevel dungeonLevel = server.getLevel(DUNGEON_DIMENSION);
+        if (dungeonLevel != null) {
+            BlockPos o = instance.zoneOrigin();
+            AABB zone = new AABB(
+                o.getX() - 200, dungeonLevel.getMinBuildHeight(), o.getZ() - 200,
+                o.getX() + 200, dungeonLevel.getMaxBuildHeight(), o.getZ() + 200);
+            for (DungeonMob mob : dungeonLevel.getEntitiesOfClass(DungeonMob.class, zone,
+                    m -> m.getPersistentData().getInt("instance_id") == instanceId)) {
+                mob.discard();
+            }
+        }
+
+        freeIds.offer(instanceId);
     }
 
     public void addDungeonKill(int instanceId) {

@@ -27,8 +27,15 @@ public final class RaidManager {
     private final Map<UUID, Long>      inviteSentTime   = new HashMap<>();
     // invitee UUID → their old role (for rematch auto-assign)
     private final Map<UUID, RaidRole>  pendingRoles     = new HashMap<>();
-    // leader UUID → last group snapshot
-    private final Map<UUID, RaidHistory> history        = new HashMap<>();
+    // leader UUID → last group snapshot (LRU borné : on ne garde que les N plus récents)
+    private static final int MAX_HISTORY = 256;
+    private final Map<UUID, RaidHistory> history        =
+        new LinkedHashMap<>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<UUID, RaidHistory> eldest) {
+                return size() > MAX_HISTORY;
+            }
+        };
     // anti-AFK: last recorded position
     private final Map<UUID, Vec3>      lastPos          = new HashMap<>();
     private final Map<UUID, Long>      lastMoveTime     = new HashMap<>();
