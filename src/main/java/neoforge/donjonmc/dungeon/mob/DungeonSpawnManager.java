@@ -103,6 +103,11 @@ public final class DungeonSpawnManager {
         if (atkAttr != null) atkAttr.setBaseValue(atkAttr.getBaseValue()   * scale.atkMult());
         mob.setHealth(mob.getMaxHealth());
 
+        // Mobs instanciés : ils sont spawn avant l'arrivée des joueurs et souvent à
+        // >128 blocs de l'entrée. Sans persistance, checkDespawn() les supprime
+        // instantanément dès qu'un joueur entre (le boss au fond disparaissait ainsi).
+        mob.setPersistenceRequired();
+
         mob.getPersistentData().putInt("instance_id", instanceId);
         mob.getPersistentData().putInt("dungeon_rank_ord", rank.ordinal());
         if (isBoss) mob.getPersistentData().putBoolean("dungeon_boss", true);
