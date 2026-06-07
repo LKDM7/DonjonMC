@@ -505,12 +505,23 @@ public final class DailyQuestManager {
         player.sendSystemMessage(Component.translatable("donjonmc.quest.enabled"));
     }
 
+    public void onPlayerLogout(ServerPlayer player) {
+        DailyQuestData data = player.getData(ModAttachments.DAILY_QUEST);
+        if (!data.isActive()) return;
+        long now = player.server.overworld().getGameTime();
+        data.pauseTimer(now);
+        player.setData(ModAttachments.DAILY_QUEST, data);
+    }
+
     public void syncOnLogin(ServerPlayer player) {
         DailyQuestData data = player.getData(ModAttachments.DAILY_QUEST);
         if (!data.isActive()) { syncHide(player); return; }
+        long now = player.server.overworld().getGameTime();
+        data.resumeTimer(now);
+        player.setData(ModAttachments.DAILY_QUEST, data);
         syncToPlayer(player, data);
         // Re-init survival timer
-        survivalStartTick.put(player.getUUID(), player.server.overworld().getGameTime());
+        survivalStartTick.put(player.getUUID(), now);
     }
 
     // ── Sync ──────────────────────────────────────────────────────────────────

@@ -45,7 +45,7 @@ public final class DailyQuestEventHandler {
         DailyQuestManager.getInstance().onServerTick(event.getServer());
     }
 
-    // ── Login ─────────────────────────────────────────────────────────────────
+    // ── Login / Logout ────────────────────────────────────────────────────────
 
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
@@ -54,6 +54,12 @@ public final class DailyQuestEventHandler {
         DailyQuestManager mgr = DailyQuestManager.getInstance();
         mgr.assignIfNeeded(sp);
         mgr.syncOnLogin(sp);
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer sp)) return;
+        DailyQuestManager.getInstance().onPlayerLogout(sp);
     }
 
     // ── Player tick (movement / depth) ────────────────────────────────────────

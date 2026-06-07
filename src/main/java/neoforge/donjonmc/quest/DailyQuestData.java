@@ -20,7 +20,8 @@ public class DailyQuestData {
         Codec.INT.optionalFieldOf("nightState", 0).forGetter(d -> d.nightState),
         Codec.INT.optionalFieldOf("gainedModXp", 0).forGetter(d -> d.gainedModXp),
         Codec.INT.optionalFieldOf("spentStatPoints", 0).forGetter(d -> d.spentStatPoints),
-        Codec.BOOL.optionalFieldOf("disabled", false).forGetter(d -> d.disabled)
+        Codec.BOOL.optionalFieldOf("disabled", false).forGetter(d -> d.disabled),
+        Codec.LONG.optionalFieldOf("pausedRemainingTicks", -1L).forGetter(d -> d.pausedRemainingTicks)
     ).apply(i, DailyQuestData::new));
 
     private boolean active;
@@ -33,26 +34,30 @@ public class DailyQuestData {
     private int gainedModXp;
     private int spentStatPoints;
     private boolean disabled;
+    // -1 = timer running normally; >=0 = ticks remaining at pause time (offline pause)
+    private long pausedRemainingTicks;
 
     public DailyQuestData() {
         this(false, -1L, -1L,
              new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),
-             0, 0, 0, false);
+             0, 0, 0, false, -1L);
     }
 
     public DailyQuestData(boolean active, long timerStartTick, long lastAssignedDay,
                           List<Integer> questIds, List<Integer> progress, List<Boolean> completed,
-                          int nightState, int gainedModXp, int spentStatPoints, boolean disabled) {
-        this.active           = active;
-        this.timerStartTick   = timerStartTick;
-        this.lastAssignedDay  = lastAssignedDay;
-        this.questIds         = new ArrayList<>(questIds);
-        this.progress         = new ArrayList<>(progress);
-        this.completed        = new ArrayList<>(completed);
-        this.nightState       = nightState;
-        this.gainedModXp      = gainedModXp;
-        this.spentStatPoints  = spentStatPoints;
-        this.disabled         = disabled;
+                          int nightState, int gainedModXp, int spentStatPoints, boolean disabled,
+                          long pausedRemainingTicks) {
+        this.active                = active;
+        this.timerStartTick        = timerStartTick;
+        this.lastAssignedDay       = lastAssignedDay;
+        this.questIds              = new ArrayList<>(questIds);
+        this.progress              = new ArrayList<>(progress);
+        this.completed             = new ArrayList<>(completed);
+        this.nightState            = nightState;
+        this.gainedModXp           = gainedModXp;
+        this.spentStatPoints       = spentStatPoints;
+        this.disabled              = disabled;
+        this.pausedRemainingTicks  = pausedRemainingTicks;
     }
 
     // ── Assignment ─────────────────────────────────────────────────────────────
@@ -65,12 +70,13 @@ public class DailyQuestData {
             this.progress.add(0);
             this.completed.add(false);
         }
-        this.active          = true;
-        this.timerStartTick  = startTick;
-        this.lastAssignedDay = day;
-        this.nightState      = 0;
-        this.gainedModXp     = 0;
-        this.spentStatPoints = 0;
+        this.active                = true;
+        this.timerStartTick        = startTick;
+        this.lastAssignedDay       = day;
+        this.nightState            = 0;
+        this.gainedModXp           = 0;
+        this.spentStatPoints       = 0;
+        this.pausedRemainingTicks  = -1L;
     }
 
     // ── Slot access ────────────────────────────────────────────────────────────
@@ -100,11 +106,28 @@ public class DailyQuestData {
     // ── Timer ──────────────────────────────────────────────────────────────────
 
     public long ticksRemaining(long now) {
+        if (pausedRemainingTicks >= 0) return pausedRemainingTicks;
         if (timerStartTick < 0) return DURATION_TICKS;
         return (timerStartTick + DURATION_TICKS) - now;
     }
 
+    /** Freeze the timer at the current remaining ticks (called on player disconnect). */
+    public void pauseTimer(long now) {
+        if (pausedRemainingTicks < 0) {
+            pausedRemainingTicks = ticksRemaining(now);
+        }
+    }
+
+    /** Restart the timer from where it was paused (called on player reconnect). */
+    public void resumeTimer(long now) {
+        if (pausedRemainingTicks >= 0) {
+            timerStartTick = now - (DURATION_TICKS - pausedRemainingTicks);
+            pausedRemainingTicks = -1L;
+        }
+    }
+
     public void skipToThirtySeconds(long now) {
+        pausedRemainingTicks = -1L;
         this.timerStartTick = now - (DURATION_TICKS - 30L * 20L);
     }
 
