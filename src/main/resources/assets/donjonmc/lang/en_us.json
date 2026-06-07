@@ -176,6 +176,7 @@
   "donjonmc.punishment.no_commands":          "§4[System] §rYou cannot use commands during punishment.",
   "donjonmc.punishment.no_escape":            "§4[System] §rThere is no escape. Endure your punishment.",
   "donjonmc.punishment.no_place":             "§4[System] §rYou cannot place blocks during punishment.",
+  "donjonmc.punishment.no_break":             "§4[System] §rYou cannot break blocks during punishment.",
   "donjonmc.punishment.resumed":              "§4[System] §rYour punishment resumes. Time remaining: §c%s§r.",
   "donjonmc.punishment.expired_offline":      "§4[System] §rYou failed your punishment while offline. Your stats have been stripped.",
 

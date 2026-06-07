@@ -95,6 +95,15 @@ public final class PunishmentEventHandler {
         }
     }
 
+    // Bloque tout cassage de blocs dans la dimension de punition
+    @SubscribeEvent
+    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel sl)) return;
+        if (!sl.dimension().equals(PunishmentManager.PUNISHMENT_DIMENSION)) return;
+        event.setCanceled(true);
+        event.getPlayer().sendSystemMessage(Component.translatable("donjonmc.punishment.no_break"));
+    }
+
     /** Seul le SandWorm peut rester dans la dimension de punition. */
     @SubscribeEvent
     public static void onFinalizeSpawn(FinalizeSpawnEvent event) {
