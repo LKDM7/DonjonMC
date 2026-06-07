@@ -23,7 +23,11 @@ public record SpendSkillPointPacket(StatType stat) implements CustomPacketPayloa
         new StreamCodec<>() {
             @Override
             public SpendSkillPointPacket decode(FriendlyByteBuf buf) {
-                return new SpendSkillPointPacket(StatType.values()[buf.readByte()]);
+                // Index contrôlé par le client → on borne pour éviter un AIOOBE au décodage
+                int idx = buf.readByte();
+                StatType[] all = StatType.values();
+                if (idx < 0 || idx >= all.length) idx = 0;
+                return new SpendSkillPointPacket(all[idx]);
             }
 
             @Override
