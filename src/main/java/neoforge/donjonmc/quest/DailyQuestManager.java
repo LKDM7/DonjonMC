@@ -519,9 +519,33 @@ public final class DailyQuestManager {
         long now = player.server.overworld().getGameTime();
         data.resumeTimer(now);
         player.setData(ModAttachments.DAILY_QUEST, data);
+        // Re-amorce les compteurs transitoires (perdus au reboot) depuis la
+        // progression persistée, sinon le premier événement écraserait la
+        // progression sauvegardée (ex. KILL_STREAK 36/40 → 1/40).
+        seedTransientCounters(player, data, now);
         syncToPlayer(player, data);
-        // Re-init survival timer
-        survivalStartTick.put(player.getUUID(), now);
+    }
+
+    /**
+     * Restaure les compteurs serveur transitoires à partir de la progression
+     * sauvegardée, pour les quêtes dont {@code setProgressForType} pilote la
+     * progression (et l'écraserait sinon après un redémarrage).
+     */
+    private void seedTransientCounters(ServerPlayer player, DailyQuestData data, long now) {
+        UUID uid = player.getUUID();
+        survivalStartTick.put(uid, now);
+        for (int i = 0; i < data.questCount(); i++) {
+            if (data.isCompleted(i)) continue;
+            QuestDef def = QuestRegistry.byId(data.getQuestId(i));
+            if (def == null) continue;
+            switch (def.type()) {
+                case KILL_STREAK         -> killStreaks.put(uid, data.getProgress(i));
+                case KILL_CREEPER_NO_EXP -> creeperNoExpCount.put(uid, data.getProgress(i));
+                case SURVIVE_MINUTES     -> survivalStartTick.put(uid,
+                                                now - (long) data.getProgress(i) * 60L * 20L);
+                default -> {}
+            }
+        }
     }
 
     // ── Sync ──────────────────────────────────────────────────────────────────
