@@ -164,6 +164,8 @@ public final class DungeonEventHandler {
     public static void onDungeonTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel sl)) return;
         if (!sl.dimension().equals(DungeonManager.DUNGEON_DIMENSION)) return;
+        // Nettoyage différé des zones terminées (chaque tick, budget limité).
+        DungeonManager.getInstance().tickZoneClears(sl, sl.getGameTime());
         if (sl.getGameTime() % 20 != 0) return;
         for (ServerPlayer player : sl.players()) {
             BlockPos center = player.blockPosition();

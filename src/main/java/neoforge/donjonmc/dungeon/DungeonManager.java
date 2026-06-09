@@ -16,6 +16,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.portal.DimensionTransition;
@@ -55,11 +56,85 @@ public final class DungeonManager {
     /** IDs (= zones) d'instances terminées, réutilisables pour éviter d'étendre la dimension à l'infini. */
     private final Deque<Integer> freeIds = new ArrayDeque<>();
 
+    // ── Nettoyage différé des zones ─────────────────────────────────────────────
+    // 3 min après la fin d'un donjon, on vide la zone (en air) puis on libère son ID.
+    // Tant que le nettoyage n'est pas terminé, la zone n'est pas recyclée : le prochain
+    // donjon repart donc d'un espace vide (plus de chevauchement de structures).
+    private static final int ZONE_CLEAR_DELAY_TICKS = 3 * 60 * 20; // 3 minutes
+    private static final int ZONE_CLEAR_RADIUS      = 180;         // marche bornée à ±160 + marge
+    private static final int ZONE_CLEAR_MIN_Y       = 58;
+    private static final int ZONE_CLEAR_MAX_Y       = 110;
+    private static final int ZONE_CLEAR_BUDGET      = 40000;       // positions traitées par tick
+
+    private final List<ZoneClear> pendingClears = new ArrayList<>();
+
+    private static final class ZoneClear {
+        final int  instanceId;
+        final long startTick;
+        final int  minX, maxX, minZ, maxZ, minY, maxY;
+        final long total;
+        long cursor;
+
+        ZoneClear(int instanceId, BlockPos origin, long startTick) {
+            this.instanceId = instanceId;
+            this.startTick  = startTick;
+            this.minX = origin.getX() - ZONE_CLEAR_RADIUS;
+            this.maxX = origin.getX() + ZONE_CLEAR_RADIUS;
+            this.minZ = origin.getZ() - ZONE_CLEAR_RADIUS;
+            this.maxZ = origin.getZ() + ZONE_CLEAR_RADIUS;
+            this.minY = ZONE_CLEAR_MIN_Y;
+            this.maxY = ZONE_CLEAR_MAX_Y;
+            long w = (long) (maxX - minX + 1), h = (maxY - minY + 1), d = (maxZ - minZ + 1);
+            this.total = w * h * d;
+        }
+    }
+
+    private void scheduleZoneClear(int instanceId, BlockPos zoneOrigin, long now) {
+        pendingClears.add(new ZoneClear(instanceId, zoneOrigin, now + ZONE_CLEAR_DELAY_TICKS));
+    }
+
+    /** Appelé chaque tick par DungeonEventHandler : vide progressivement les zones en attente. */
+    public void tickZoneClears(ServerLevel level, long now) {
+        if (pendingClears.isEmpty()) return;
+        int budget = ZONE_CLEAR_BUDGET;
+        BlockPos.MutableBlockPos mp = new BlockPos.MutableBlockPos();
+
+        Iterator<ZoneClear> it = pendingClears.iterator();
+        while (it.hasNext() && budget > 0) {
+            ZoneClear zc = it.next();
+            if (now < zc.startTick) continue;
+
+            long w = zc.maxX - zc.minX + 1;
+            long d = zc.maxZ - zc.minZ + 1;
+            long plane = w * d;
+
+            while (zc.cursor < zc.total && budget > 0) {
+                long k   = zc.cursor;
+                int  y   = (int) (k / plane) + zc.minY;
+                long rem = k % plane;
+                int  x   = (int) (rem / d) + zc.minX;
+                int  z   = (int) (rem % d) + zc.minZ;
+                mp.set(x, y, z);
+                if (!level.getBlockState(mp).isAir()) {
+                    level.setBlock(mp, Blocks.AIR.defaultBlockState(), 2);
+                }
+                zc.cursor++;
+                budget--;
+            }
+
+            if (zc.cursor >= zc.total) {
+                freeIds.offer(zc.instanceId); // zone vidée → réutilisable
+                it.remove();
+            }
+        }
+    }
+
     public void clear() {
         activeInstances.clear();
         playerToInstance.clear();
         entryGraceTick.clear();
         freeIds.clear();
+        pendingClears.clear();
         idCounter.set(0);
     }
 
@@ -740,7 +815,8 @@ public final class DungeonManager {
             }
         }
 
-        freeIds.offer(instanceId);
+        // Programme le nettoyage de la zone dans 3 min ; l'ID ne sera recyclé qu'une fois vidé.
+        scheduleZoneClear(instanceId, instance.zoneOrigin(), server.overworld().getGameTime());
     }
 
     public void addDungeonKill(int instanceId) {
