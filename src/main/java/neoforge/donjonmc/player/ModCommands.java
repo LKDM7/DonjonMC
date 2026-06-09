@@ -123,6 +123,11 @@ public final class ModCommands {
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> executePunishmentTarget(ctx,
                             EntityArgument.getPlayer(ctx, "player"))))
+                    .then(Commands.literal("release")
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                            .executes(ctx -> executeReleasePunishment(ctx,
+                                EntityArgument.getPlayer(ctx, "player")))))
                     .then(Commands.literal("test")
                         .requires(src -> src.hasPermission(2))
                         .executes(ModCommands::executePunishmentTest)))
@@ -183,6 +188,30 @@ public final class ModCommands {
                                 IntegerArgumentType.getInteger(ctx, "amount"))))
                     )
                 )
+
+                // /donjonmc stats reset [player]    → admin (op 2) : réinitialise/rembourse
+                // /donjonmc stats respec            → joueur : respec payant (cooldown 7j + 30 niveaux)
+                .then(Commands.literal("stats")
+                    .then(Commands.literal("reset")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> executeStatsReset(ctx, null))
+                        .then(Commands.argument("player", EntityArgument.player())
+                            .executes(ctx -> executeStatsReset(ctx,
+                                EntityArgument.getPlayer(ctx, "player")))))
+                    .then(Commands.literal("respec")
+                        .executes(ModCommands::executeStatsRespec)))
+
+                // /donjonmc level set <n> [player]  → définit le niveau d'un joueur
+                .then(Commands.literal("level")
+                    .requires(src -> src.hasPermission(2))
+                    .then(Commands.literal("set")
+                        .then(Commands.argument("level", IntegerArgumentType.integer(1, LevelHelper.MAX_LEVEL))
+                            .executes(ctx -> executeSetLevel(ctx, null,
+                                IntegerArgumentType.getInteger(ctx, "level")))
+                            .then(Commands.argument("player", EntityArgument.player())
+                                .executes(ctx -> executeSetLevel(ctx,
+                                    EntityArgument.getPlayer(ctx, "player"),
+                                    IntegerArgumentType.getInteger(ctx, "level")))))))
         );
     }
 
@@ -422,6 +451,24 @@ public final class ModCommands {
         }
     }
 
+    private static int executeReleasePunishment(CommandContext<CommandSourceStack> ctx,
+                                                 ServerPlayer target) {
+        try {
+            boolean ok = PunishmentManager.getInstance().releasePlayer(target);
+            if (ok) {
+                ctx.getSource().sendSuccess(
+                    () -> Component.translatable("donjonmc.cmd.punishment.released", target.getName()), true);
+            } else {
+                ctx.getSource().sendFailure(
+                    Component.translatable("donjonmc.cmd.punishment.not_punished", target.getName()));
+            }
+            return ok ? 1 : 0;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal(e.getMessage()));
+            return 0;
+        }
+    }
+
     // ── /donjonmc dungeon ─────────────────────────────────────────────────────
 
     private static int executeDungeonExit(CommandContext<CommandSourceStack> ctx) {
@@ -537,6 +584,77 @@ public final class ModCommands {
             }
 
             return amount;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal(e.getMessage()));
+            return 0;
+        }
+    }
+
+    // ── /donjonmc stats reset ────────────────────────────────────────────────
+
+    private static int executeStatsReset(CommandContext<CommandSourceStack> ctx,
+                                         ServerPlayer target) {
+        try {
+            ServerPlayer p = target != null ? target : ctx.getSource().getPlayerOrException();
+            PlayerData data = p.getData(ModAttachments.PLAYER_DATA);
+            final int refund = data.getStrength() + data.getAgility() + data.getVitality()
+                + data.getIntelligence() + data.getPerception();
+            data.setStrength(0);
+            data.setAgility(0);
+            data.setVitality(0);
+            data.setIntelligence(0);
+            data.setPerception(0);
+            data.addSkillPoints(refund);
+            p.setData(ModAttachments.PLAYER_DATA, data);
+            PlayerEventHandler.applyStatModifiers(p, data);
+            PlayerEventHandler.sendSyncPacket(p);
+
+            p.sendSystemMessage(Component.translatable("donjonmc.cmd.stats.reset_self", refund));
+            if (target != null) {
+                ctx.getSource().sendSuccess(
+                    () -> Component.translatable("donjonmc.cmd.stats.reset_other", p.getName(), refund), true);
+            }
+            return 1;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal(e.getMessage()));
+            return 0;
+        }
+    }
+
+    // ── /donjonmc stats respec (joueur) ──────────────────────────────────────
+    // Logique partagée avec le bouton GUI dans PlayerEventHandler.tryRespec.
+
+    private static int executeStatsRespec(CommandContext<CommandSourceStack> ctx) {
+        try {
+            ServerPlayer p = ctx.getSource().getPlayerOrException();
+            return PlayerEventHandler.tryRespec(p) ? 1 : 0;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal(e.getMessage()));
+            return 0;
+        }
+    }
+
+    // ── /donjonmc level set ──────────────────────────────────────────────────
+
+    private static int executeSetLevel(CommandContext<CommandSourceStack> ctx,
+                                       ServerPlayer target, int level) {
+        try {
+            ServerPlayer p = target != null ? target : ctx.getSource().getPlayerOrException();
+            PlayerData data = p.getData(ModAttachments.PLAYER_DATA);
+            data.setLevel(level);
+            data.setXp(0);
+            p.setData(ModAttachments.PLAYER_DATA, data);
+            PlayerEventHandler.applyHealthModifier(p, level);
+            PlayerEventHandler.applyStatModifiers(p, data);
+            RankTeamManager.updatePlayerTeam(p);
+            PlayerEventHandler.sendSyncPacket(p);
+
+            p.sendSystemMessage(Component.translatable("donjonmc.cmd.level.set_self", level));
+            if (target != null) {
+                ctx.getSource().sendSuccess(
+                    () -> Component.translatable("donjonmc.cmd.level.set_other", p.getName(), level), true);
+            }
+            return 1;
         } catch (Exception e) {
             ctx.getSource().sendFailure(Component.literal(e.getMessage()));
             return 0;

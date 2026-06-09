@@ -30,6 +30,12 @@ public final class ModNetwork {
             ToggleSpeedPacket::handle
         );
 
+        registrar.playToServer(
+            RespecStatsPacket.TYPE,
+            RespecStatsPacket.STREAM_CODEC,
+            RespecStatsPacket::handle
+        );
+
         registrar.playToClient(
             RaidSyncPacket.TYPE,
             RaidSyncPacket.STREAM_CODEC,
@@ -46,6 +52,12 @@ public final class ModNetwork {
             SyncDailyQuestPacket.TYPE,
             SyncDailyQuestPacket.STREAM_CODEC,
             SyncDailyQuestPacket::handle
+        );
+
+        registrar.playToClient(
+            SyncUniqueQuestPacket.TYPE,
+            SyncUniqueQuestPacket.STREAM_CODEC,
+            SyncUniqueQuestPacket::handle
         );
 
         registrar.playToServer(

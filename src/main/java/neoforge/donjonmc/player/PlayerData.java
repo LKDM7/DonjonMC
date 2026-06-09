@@ -18,7 +18,8 @@ public class PlayerData {
             Codec.BOOL.fieldOf("initialized").forGetter(d -> d.initialized),
             Codec.FLOAT.optionalFieldOf("mana", 100f).forGetter(d -> 100f),
             Codec.INT.optionalFieldOf("playerClassOrdinal", 0).forGetter(d -> d.playerClassOrdinal),
-            Codec.BOOL.optionalFieldOf("speedEnabled", true).forGetter(d -> d.speedEnabled)
+            Codec.BOOL.optionalFieldOf("speedEnabled", true).forGetter(d -> d.speedEnabled),
+            Codec.LONG.optionalFieldOf("lastRespecMs", 0L).forGetter(d -> d.lastRespecMs)
         ).apply(instance, PlayerData::new)
     );
 
@@ -33,14 +34,15 @@ public class PlayerData {
     private boolean initialized;
     private int playerClassOrdinal;
     private boolean speedEnabled;
+    private long lastRespecMs; // timestamp IRL (ms) du dernier respec joueur ; 0 = jamais
 
     public PlayerData() {
-        this(0, 0L, 0, 0, 0, 0, 0, 0, false, 100f, 0, true);
+        this(0, 0L, 0, 0, 0, 0, 0, 0, false, 100f, 0, true, 0L);
     }
 
     public PlayerData(int level, long xp, int skillPoints, int strength, int agility,
                       int vitality, int intelligence, int perception, boolean initialized,
-                      float mana, int playerClassOrdinal, boolean speedEnabled) {
+                      float mana, int playerClassOrdinal, boolean speedEnabled, long lastRespecMs) {
         this.level              = level;
         this.xp                 = xp;
         this.skillPoints        = skillPoints;
@@ -53,6 +55,7 @@ public class PlayerData {
         // mana intentionally discarded — managed by Iron's Spells 'n Spellbooks (MagicData)
         this.playerClassOrdinal = playerClassOrdinal;
         this.speedEnabled       = speedEnabled;
+        this.lastRespecMs       = lastRespecMs;
     }
 
     public int     getLevel()        { return level; }
@@ -67,6 +70,8 @@ public class PlayerData {
     public int     getPlayerClassOrdinal() { return playerClassOrdinal; }
     public PlayerClass getPlayerClass()    { return PlayerClass.fromOrdinal(playerClassOrdinal); }
     public boolean isSpeedEnabled()        { return speedEnabled; }
+    public long    getLastRespecMs()       { return lastRespecMs; }
+    public void    setLastRespecMs(long v) { this.lastRespecMs = v; }
 
     public void setLevel(int level)        { this.level = level; }
     public void setXp(long xp)            { this.xp = xp; }

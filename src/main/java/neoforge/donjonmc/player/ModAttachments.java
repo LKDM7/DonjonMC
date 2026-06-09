@@ -8,6 +8,7 @@ import neoforge.donjonmc.Donjonmc;
 import neoforge.donjonmc.dungeon.DungeonSaveData;
 import neoforge.donjonmc.punishment.PunishmentData;
 import neoforge.donjonmc.quest.DailyQuestData;
+import neoforge.donjonmc.quest.UniqueQuestData;
 
 public final class ModAttachments {
 
@@ -36,6 +37,14 @@ public final class ModAttachments {
         ATTACHMENT_TYPES.register("daily_quest", () ->
             AttachmentType.builder(DailyQuestData::new)
                 .serialize(DailyQuestData.CODEC)
+                .copyOnDeath()
+                .build()
+        );
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<UniqueQuestData>> UNIQUE_QUEST =
+        ATTACHMENT_TYPES.register("unique_quest", () ->
+            AttachmentType.builder(UniqueQuestData::new)
+                .serialize(UniqueQuestData.CODEC)
                 .copyOnDeath()
                 .build()
         );

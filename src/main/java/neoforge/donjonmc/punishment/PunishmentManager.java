@@ -152,6 +152,31 @@ public final class PunishmentManager {
     }
 
     /**
+     * Admin : sort un joueur de la punition sans pénalité ni récompense et le renvoie
+     * à son point de retour. Renvoie {@code false} si le joueur n'était pas en punition.
+     */
+    public boolean releasePlayer(ServerPlayer player) {
+        PunishmentInstance inst = active.remove(player.getUUID());
+        if (inst != null) {
+            inst.markCompleted();
+            freeSlots.add(inst.getSlotId());
+            clearFromDisk(player);
+            sendTimerPacket(player, -1);
+            ServerLevel returnLevel = player.server.getLevel(inst.getReturnDimension());
+            if (returnLevel == null) returnLevel = player.server.overworld();
+            teleportTo(player, returnLevel, inst.getReturnPos());
+            return true;
+        }
+        // Pas d'instance active : si bloqué dans la dimension punition, on le renvoie quand même.
+        if (player.level().dimension().equals(PUNISHMENT_DIMENSION)) {
+            ServerLevel overworld = player.server.overworld();
+            teleportTo(player, overworld, overworld.getSharedSpawnPos());
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Safety check called on Clone (respawn). If the player ends up in the punishment
      * dimension with no active instance, send them to the overworld spawn.
      */

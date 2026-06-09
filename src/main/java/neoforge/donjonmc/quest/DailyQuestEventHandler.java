@@ -54,6 +54,7 @@ public final class DailyQuestEventHandler {
         DailyQuestManager mgr = DailyQuestManager.getInstance();
         mgr.assignIfNeeded(sp);
         mgr.syncOnLogin(sp);
+        UniqueQuestManager.getInstance().syncToPlayer(sp);
     }
 
     @SubscribeEvent
@@ -135,6 +136,7 @@ public final class DailyQuestEventHandler {
 
     public static void onDungeonBossKilled(ServerPlayer player) {
         DailyQuestManager.getInstance().onProgress(player, QuestType.KILL_BOSS, 1, "any");
+        UniqueQuestManager.getInstance().onBossKilled(player);
     }
 
     // ── Explosion damage (creeper streak reset) ───────────────────────────────

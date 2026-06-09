@@ -181,6 +181,9 @@ public final class DailyQuestManager {
     }
 
     public void onDungeonCompleted(ServerPlayer player, DungeonRank rank, long elapsedTicks, int groupSize) {
+        // Quêtes uniques (indépendantes de l'état des quêtes quotidiennes).
+        UniqueQuestManager.getInstance().onDungeonCompleted(player, rank);
+
         DailyQuestData data = player.getData(ModAttachments.DAILY_QUEST);
         if (!data.isActive()) return;
         long elapsedSecs = elapsedTicks / 20L;

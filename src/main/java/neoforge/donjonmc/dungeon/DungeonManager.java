@@ -770,8 +770,8 @@ public final class DungeonManager {
             Vec3.ZERO, 0f, 0f, false,
             entity -> {
                 if (entity instanceof ServerPlayer sp) {
-                    // 5s Resistance V = immunité le temps de s'orienter
-                    sp.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 100, 4, false, false));
+                    // 10s Resistance V = immunité le temps de charger/s'orienter
+                    sp.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 4, false, false));
                 }
             }));
     }

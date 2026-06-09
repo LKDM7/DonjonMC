@@ -7,8 +7,12 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import neoforge.donjonmc.client.ClientDailyQuestCache;
 import neoforge.donjonmc.client.ClientPlayerDataCache;
 import neoforge.donjonmc.client.ClientRaidCache;
+import neoforge.donjonmc.client.ClientUniqueQuestCache;
 import neoforge.donjonmc.dungeon.DungeonRank;
+import neoforge.donjonmc.quest.UniqueQuestDef;
+import neoforge.donjonmc.quest.UniqueQuestRegistry;
 import neoforge.donjonmc.network.RaidActionPacket;
+import neoforge.donjonmc.network.RespecStatsPacket;
 import neoforge.donjonmc.network.SpendSkillPointPacket;
 import neoforge.donjonmc.network.ToggleSpeedPacket;
 import neoforge.donjonmc.player.LevelHelper;
@@ -53,8 +57,9 @@ public class HunterScreen extends Screen {
     private int activeTab = 0;
     private int left, top;
 
-    // Stats tab click zone
+    // Stats tab click zones
     private int speedToggleY = -1;
+    private int respecBtnY   = -1;
 
     // Quests tab click zone (toggle HUD)
     private int questHudToggleY = -1;
@@ -124,10 +129,11 @@ public class HunterScreen extends Screen {
             case 2 -> renderQuests(g);
             case 3 -> renderClasse(g);
             case 4 -> renderRaid(g, mx, my);
+            case 5 -> renderUniques(g);
         }
     }
 
-    private static final int TAB_COUNT = 5;
+    private static final int TAB_COUNT = 6;
 
     private void renderTabs(GuiGraphics g, int mx, int my) {
         String[] labels = {
@@ -135,7 +141,8 @@ public class HunterScreen extends Screen {
             t("donjonmc.gui.tab.stats"),
             t("donjonmc.gui.tab.quetes"),
             t("donjonmc.gui.tab.classe"),
-            t("donjonmc.gui.tab.raid")
+            t("donjonmc.gui.tab.raid"),
+            t("donjonmc.gui.tab.uniques")
         };
         int tw = (W - 2) / TAB_COUNT;
         for (int i = 0; i < TAB_COUNT; i++) {
@@ -202,6 +209,7 @@ public class HunterScreen extends Screen {
 
     private void renderStats(GuiGraphics g, int mx, int my) {
         speedToggleY = -1;
+        respecBtnY   = -1;
         int sp = ClientPlayerDataCache.skillPoints;
         int y  = top + STATS_HEADER_Y;
         int cx = left + 12;
@@ -248,6 +256,15 @@ public class HunterScreen extends Screen {
         g.drawCenteredString(this.font, label, cx + btnW / 2, toggleY + 3,
             speedOn ? 0xFFAAFFAA : 0xFFFFAAAA);
         speedToggleY = toggleY;
+
+        // ── Bouton respec ─────────────────────────────────────────────────────
+        int respecY = toggleY + 17;
+        boolean hR = mx >= cx && mx < cx + btnW && my >= respecY && my < respecY + 13;
+        g.fill(cx, respecY, cx + btnW, respecY + 13, hR ? C_PLUS_H : C_PLUS);
+        border(g, cx, respecY, btnW, 13, 0xFF145A32);
+        g.drawCenteredString(this.font, t("donjonmc.gui.stats.respec"),
+            cx + btnW / 2, respecY + 3, C_GOLD);
+        respecBtnY = respecY;
     }
 
     private void renderQuests(GuiGraphics g) {
@@ -337,6 +354,47 @@ public class HunterScreen extends Screen {
         String btnLabel = t(hudOn ? "donjonmc.gui.quests.hud_hide" : "donjonmc.gui.quests.hud_show");
         g.drawCenteredString(this.font, btnLabel, cx + btnW / 2, y + 3,
             hudOn ? 0xFFAAFFAA : 0xFFFFAAAA);
+    }
+
+    private void renderUniques(GuiGraphics g) {
+        int cx = left + 12;
+        int y  = top + CONTENT_Y + 6;
+
+        g.drawCenteredString(this.font, t("donjonmc.gui.uniques.title"), left + W / 2, y, C_TEXT);
+        y += 12;
+        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        y += 6;
+
+        int[]     prog = ClientUniqueQuestCache.progress;
+        boolean[] done = ClientUniqueQuestCache.completed;
+
+        for (UniqueQuestDef def : UniqueQuestRegistry.ALL) {
+            int id = def.id();
+            int p  = id < prog.length ? prog[id] : 0;
+            boolean c = id < done.length && done[id];
+
+            // Pastille d'état
+            g.fill(cx, y + 2, cx + 4, y + 6, c ? 0xFF55FF55 : C_GOLD);
+
+            // Récompense XP (extrême droite)
+            String xpStr = "+" + def.xpReward();
+            g.drawString(this.font, xpStr, left + W - 12 - this.font.width(xpStr), y, C_GOLD);
+
+            // Progression / coché (juste à gauche de l'XP)
+            String progStr = c ? "✓" : (p + "/" + def.target());
+            int progX = left + W - 12 - this.font.width(xpStr) - 6 - this.font.width(progStr);
+            g.drawString(this.font, progStr, progX, y, c ? 0xFF55FF55 : C_DIM);
+
+            // Nom (tronqué pour ne pas chevaucher)
+            String name = Component.translatable(def.nameKey()).getString();
+            int maxNameW = progX - (cx + 7) - 4;
+            while (this.font.width(name) > maxNameW && name.length() > 1) {
+                name = name.substring(0, name.length() - 1);
+            }
+            g.drawString(this.font, name, cx + 7, y, c ? 0xFF55FF55 : C_TEXT);
+
+            y += 13;
+        }
     }
 
     private void renderClasse(GuiGraphics g) {
@@ -620,6 +678,11 @@ public class HunterScreen extends Screen {
             if (speedToggleY >= 0 && my >= speedToggleY && my < speedToggleY + 13
                     && mx >= cx && mx < cx + btnW) {
                 PacketDistributor.sendToServer(new ToggleSpeedPacket());
+                return true;
+            }
+            if (respecBtnY >= 0 && my >= respecBtnY && my < respecBtnY + 13
+                    && mx >= cx && mx < cx + btnW) {
+                PacketDistributor.sendToServer(new RespecStatsPacket());
                 return true;
             }
         }

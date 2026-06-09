@@ -20,10 +20,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import neoforge.donjonmc.Donjonmc;
@@ -158,6 +166,11 @@ public final class PlayerEventHandler {
 
         if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
 
+        // Quête unique : compteur de monstres tués (tout monstre hostile)
+        if (killed instanceof Monster) {
+            neoforge.donjonmc.quest.UniqueQuestManager.getInstance().onMobKilled(player);
+        }
+
         // Monstre de l'épreuve → pas d'XP de mod
         if (ClassTrialHandler.onMobKilled(killed, player)) return;
 
@@ -187,6 +200,114 @@ public final class PlayerEventHandler {
         long xp = dungeonMobXp(dm);
         if (xp <= 0L) return;
         addXp(player, xp);
+    }
+
+    // ── XP de minage (minerais rares) ──────────────────────────────────────────
+
+    /** Minerais précieux qui donnent de l'XP de mod quand ils sont minés, et leur valeur. */
+    private static final java.util.Map<Block, Long> ORE_XP = java.util.Map.ofEntries(
+        java.util.Map.entry(Blocks.DIAMOND_ORE,            50L),
+        java.util.Map.entry(Blocks.DEEPSLATE_DIAMOND_ORE,  50L),
+        java.util.Map.entry(Blocks.EMERALD_ORE,            60L),
+        java.util.Map.entry(Blocks.DEEPSLATE_EMERALD_ORE,  60L),
+        java.util.Map.entry(Blocks.ANCIENT_DEBRIS,         75L),
+        java.util.Map.entry(Blocks.GOLD_ORE,               12L),
+        java.util.Map.entry(Blocks.DEEPSLATE_GOLD_ORE,     12L),
+        java.util.Map.entry(Blocks.NETHER_GOLD_ORE,         6L),
+        java.util.Map.entry(Blocks.LAPIS_ORE,               8L),
+        java.util.Map.entry(Blocks.DEEPSLATE_LAPIS_ORE,     8L)
+    );
+
+    @SubscribeEvent
+    public static void onOreMined(BlockEvent.BreakEvent event) {
+        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
+        if (player.getAbilities().instabuild) return; // pas d'XP en créatif
+        Block block = event.getState().getBlock();
+        Long xp = ORE_XP.get(block);
+        if (xp == null) return;
+        // Anti-farm : pas d'XP avec la Silk Touch (sinon on replace le minerai à l'infini).
+        if (hasSilkTouch(player)) return;
+        addXpDirect(player, xp);
+        // Quête unique : compteur de diamants minés
+        if (block == Blocks.DIAMOND_ORE || block == Blocks.DEEPSLATE_DIAMOND_ORE) {
+            neoforge.donjonmc.quest.UniqueQuestManager.getInstance().onDiamondMined(player);
+        }
+    }
+
+    private static boolean hasSilkTouch(ServerPlayer player) {
+        Holder<Enchantment> silk = player.level().registryAccess()
+            .lookupOrThrow(Registries.ENCHANTMENT)
+            .getOrThrow(Enchantments.SILK_TOUCH);
+        return EnchantmentHelper.getItemEnchantmentLevel(silk, player.getMainHandItem()) > 0;
+    }
+
+    // ── XP de succès (advancements vanilla) ─────────────────────────────────────
+
+    @SubscribeEvent
+    public static void onAdvancementEarned(AdvancementEvent.AdvancementEarnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        var display = event.getAdvancement().value().display();
+        if (display.isEmpty()) return; // ignore les advancements techniques / de recette (sans affichage)
+        long xp = switch (display.get().getType()) {
+            case TASK      -> 100L;
+            case GOAL      -> 300L;
+            case CHALLENGE -> 800L;
+        };
+        addXpDirect(player, xp);
+    }
+
+    // ── Respec des stats (joueur) ───────────────────────────────────────────────
+
+    public static final int  RESPEC_COST_LEVELS = 5;
+    public static final long RESPEC_COOLDOWN_MS = 7L * 24L * 60L * 60L * 1000L;
+
+    /**
+     * Tente un respec des stats pour le joueur. Conditions : niveau strictement supérieur au
+     * coût (pour rester ≥ 1) et cooldown de 7 jours IRL. Envoie le message approprié au joueur
+     * et renvoie {@code true} si le respec a été effectué. Partagé par la commande et le bouton GUI.
+     */
+    public static boolean tryRespec(ServerPlayer p) {
+        PlayerData data = p.getData(ModAttachments.PLAYER_DATA);
+
+        if (data.getLevel() <= RESPEC_COST_LEVELS) {
+            p.sendSystemMessage(Component.translatable(
+                "donjonmc.cmd.stats.respec.need_level", RESPEC_COST_LEVELS + 1));
+            return false;
+        }
+
+        long now  = System.currentTimeMillis();
+        long last = data.getLastRespecMs();
+        if (last > 0L && now - last < RESPEC_COOLDOWN_MS) {
+            long remaining = RESPEC_COOLDOWN_MS - (now - last);
+            long days  = remaining / (24L * 60L * 60L * 1000L);
+            long hours = (remaining / (60L * 60L * 1000L)) % 24L;
+            p.sendSystemMessage(Component.translatable(
+                "donjonmc.cmd.stats.respec.cooldown", days, hours));
+            return false;
+        }
+
+        int refund = data.getStrength() + data.getAgility() + data.getVitality()
+            + data.getIntelligence() + data.getPerception();
+        data.setStrength(0);
+        data.setAgility(0);
+        data.setVitality(0);
+        data.setIntelligence(0);
+        data.setPerception(0);
+        data.addSkillPoints(refund);
+
+        data.setLevel(data.getLevel() - RESPEC_COST_LEVELS);
+        data.setXp(0);
+        data.setLastRespecMs(now);
+        p.setData(ModAttachments.PLAYER_DATA, data);
+
+        applyHealthModifier(p, data.getLevel());
+        applyStatModifiers(p, data);
+        RankTeamManager.updatePlayerTeam(p);
+        sendSyncPacket(p);
+
+        p.sendSystemMessage(Component.translatable(
+            "donjonmc.cmd.stats.respec.success", refund, RESPEC_COST_LEVELS));
+        return true;
     }
 
     // --- API publique ---
@@ -290,6 +411,9 @@ public final class PlayerEventHandler {
         // Quête LEVEL_UP
         if (data.getLevel() > levelBefore) {
             neoforge.donjonmc.quest.DailyQuestManager.getInstance().onLevelUp(player);
+            // Quêtes uniques de palier de niveau. Appelé ici (PLAYER_DATA déjà commit) et non
+            // dans levelUp() pour éviter une réentrance de giveXpToPlayer via la récompense.
+            neoforge.donjonmc.quest.UniqueQuestManager.getInstance().onLevelReached(player, data.getLevel());
         }
     }
 
