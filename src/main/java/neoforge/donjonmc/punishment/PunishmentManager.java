@@ -8,6 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
@@ -209,11 +211,17 @@ public final class PunishmentManager {
     }
 
     private static void teleportTo(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        boolean enteringPunishment = level.dimension().equals(PUNISHMENT_DIMENSION);
         player.changeDimension(new DimensionTransition(
             level,
             new Vec3(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5),
             Vec3.ZERO, 0f, 0f, false,
-            DimensionTransition.DO_NOTHING));
+            entity -> {
+                if (enteringPunishment && entity instanceof ServerPlayer sp) {
+                    // 5s Resistance V = immunité le temps de charger/s'orienter
+                    sp.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 100, 4, false, false));
+                }
+            }));
     }
 
     // ── Persistance disque ────────────────────────────────────────────────────
