@@ -115,22 +115,30 @@ public final class DungeonEventHandler {
         DungeonManager.getInstance().onPlayerDeathInDungeon(player);
     }
 
-    /** After respawn: copy dungeon data from dead entity then send player back to overworld. */
+    /** Carry the dungeon session across death so the respawn handler can act on it. */
     @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {
         if (!event.isWasDeath()) return;
         if (!(event.getEntity() instanceof ServerPlayer sp)) return;
         if (!(event.getOriginal() instanceof ServerPlayer original)) return;
-        DungeonSaveData dungeonData = original.getData(ModAttachments.DUNGEON_SAVE);
-        sp.setData(ModAttachments.DUNGEON_SAVE, dungeonData);
+        sp.setData(ModAttachments.DUNGEON_SAVE, original.getData(ModAttachments.DUNGEON_SAVE));
+    }
+
+    /**
+     * Restore the inventory captured at death and send the player back to the overworld.
+     * Runs at LOWEST priority on {@link PlayerEvent.PlayerRespawnEvent} so it executes AFTER
+     * vanilla and any other mod that touches the inventory during respawn (e.g. inventory- or
+     * claim-managing mods in a modpack). On a dedicated server those mods would otherwise clobber
+     * the restored gear, which is why this works in single-player but failed on the server when
+     * the restore was done during the earlier Clone event.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer sp)) return;
         ListTag savedInv = deathInventories.remove(sp.getUUID());
-        if (dungeonData.isActive() && dungeonData.isDied()) {
-            // Restore the inventory captured at death time (load() clears then refills).
-            if (savedInv != null) {
-                sp.getInventory().load(savedInv);
-            } else {
-                sp.getInventory().replaceWith(original.getInventory());
-            }
+        if (savedInv != null) {
+            sp.getInventory().load(savedInv);
+            sp.inventoryMenu.broadcastChanges(); // push the restored items to the client
         }
         DungeonManager.getInstance().returnIfStranded(sp);
     }
