@@ -359,7 +359,12 @@ public final class PlayerEventHandler {
         data.addSkillPoints(2);
 
         applyHealthModifier(player, data.getLevel());
-        player.setHealth(player.getMaxHealth());
+        // Ne pas resoigner un joueur en train de mourir : remettre sa vie > 0 pendant
+        // l'event de mort le fait passer pour vivant côté serveur → l'écran de mort se
+        // bloque (le clic « respawn » est ignoré). Il réapparaîtra à pleine vie de toute façon.
+        if (!player.isDeadOrDying()) {
+            player.setHealth(player.getMaxHealth());
+        }
 
         player.getActiveEffects().stream()
             .filter(e -> !e.getEffect().value().isBeneficial())

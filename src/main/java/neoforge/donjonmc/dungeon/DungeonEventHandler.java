@@ -1,16 +1,24 @@
 package neoforge.donjonmc.dungeon;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.level.block.Blocks;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -28,6 +36,14 @@ public final class DungeonEventHandler {
     private static final int PORTAL_INTERVAL_MIN = 20 * 60 * 8;
     private static final int PORTAL_INTERVAL_MAX = 20 * 60 * 14;
     private static int nextPortalTick = PORTAL_INTERVAL_MIN;
+
+    /**
+     * Snapshot of each player's inventory captured at the moment of death (before vanilla
+     * drops/clears it). Restored on respawn in {@link #onPlayerClone}. This guarantees the
+     * player keeps their gear after a dungeon death regardless of the keepInventory gamerule
+     * or the ordering between vanilla's respawn copy and the Clone event.
+     */
+    private static final Map<UUID, ListTag> deathInventories = new HashMap<>();
 
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
@@ -72,11 +88,30 @@ public final class DungeonEventHandler {
         event.setCanceled(true);
     }
 
+    /**
+     * Right-click on a dungeon portal entity. Runs at HIGHEST priority with
+     * {@code receiveCanceled = true} so that the portal stays usable even when a third-party
+     * land-protection mod (claims / "zones") cancels the interaction inside its protected area.
+     * We perform the portal logic exactly once here and cancel the event, which also prevents
+     * vanilla from invoking {@link DungeonPortalEntity#interact} a second time.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
+    public static void onPortalInteract(PlayerInteractEvent.EntityInteract event) {
+        // Server-only: cancelling client-side would stop the interaction packet from being sent.
+        if (event.getLevel().isClientSide()) return;
+        if (!(event.getTarget() instanceof DungeonPortalEntity portal)) return;
+        InteractionResult result = portal.interact(event.getEntity(), event.getHand());
+        event.setCancellationResult(result);
+        event.setCanceled(true);
+    }
+
     /** Player death inside the dungeon dimension. */
     @SubscribeEvent
     public static void onPlayerDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!player.level().dimension().equals(DungeonManager.DUNGEON_DIMENSION)) return;
+        // Capture inventory NOW, before vanilla's death handling can drop/clear it.
+        deathInventories.put(player.getUUID(), player.getInventory().save(new ListTag()));
         DungeonManager.getInstance().onPlayerDeathInDungeon(player);
     }
 
@@ -88,8 +123,14 @@ public final class DungeonEventHandler {
         if (!(event.getOriginal() instanceof ServerPlayer original)) return;
         DungeonSaveData dungeonData = original.getData(ModAttachments.DUNGEON_SAVE);
         sp.setData(ModAttachments.DUNGEON_SAVE, dungeonData);
+        ListTag savedInv = deathInventories.remove(sp.getUUID());
         if (dungeonData.isActive() && dungeonData.isDied()) {
-            sp.getInventory().replaceWith(original.getInventory());
+            // Restore the inventory captured at death time (load() clears then refills).
+            if (savedInv != null) {
+                sp.getInventory().load(savedInv);
+            } else {
+                sp.getInventory().replaceWith(original.getInventory());
+            }
         }
         DungeonManager.getInstance().returnIfStranded(sp);
     }
