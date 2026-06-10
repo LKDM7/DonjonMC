@@ -55,6 +55,8 @@ neoForge {
         server {
             server()
             programArgument '--nogui'
+            // Dossier séparé du client pour pouvoir lancer les deux en même temps
+            gameDirectory = project.file('runserver')
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 

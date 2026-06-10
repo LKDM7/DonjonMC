@@ -1,0 +1,15 @@
+﻿{
+    "structures":  [
+
+                   ],
+    "placement":  {
+                      "type":  "cataclysm:cataclysm_random_spread",
+                      "salt":  31547671,
+                      "spacing":  30,
+                      "separation":  20,
+                      "super_exclusion_zone":  {
+                                                   "chunk_count":  8,
+                                                   "other_set":  "#cataclysm:desert_structures_avoid"
+                                               }
+                  }
+}

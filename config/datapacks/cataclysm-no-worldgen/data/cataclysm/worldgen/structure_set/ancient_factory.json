@@ -1,0 +1,11 @@
+﻿{
+    "structures":  [
+
+                   ],
+    "placement":  {
+                      "type":  "cataclysm:cataclysm_random_spread",
+                      "salt":  319514301,
+                      "spacing":  112,
+                      "separation":  70
+                  }
+}

@@ -71,9 +71,23 @@ public final class ModCommands {
         event.getDispatcher().register(
             Commands.literal("donjonmc")
 
-                // /donjonmc trial
+                // /donjonmc trial <classe>  |  /donjonmc trial reset [player] (op, test)
                 .then(Commands.literal("trial")
-                    .executes(ModCommands::executeTrial))
+                    .then(Commands.literal("reset")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> executeTrialReset(ctx, null))
+                        .then(Commands.argument("player", EntityArgument.player())
+                            .executes(ctx -> executeTrialReset(ctx,
+                                EntityArgument.getPlayer(ctx, "player")))))
+                    .then(Commands.argument("classe", StringArgumentType.word())
+                        .suggests((ctx, builder) -> {
+                            for (PlayerClass c : PlayerClass.values()) {
+                                if (c != PlayerClass.NONE) builder.suggest(c.name().toLowerCase());
+                            }
+                            return builder.buildFuture();
+                        })
+                        .executes(ctx -> executeTrial(ctx,
+                            StringArgumentType.getString(ctx, "classe")))))
 
                 // /donjonmc quest start            → démarre (force) les quêtes quotidiennes
                 // /donjonmc quest force [player]   → force même si déjà faites aujourd'hui (op)
@@ -230,18 +244,45 @@ public final class ModCommands {
 
     // ── /donjonmc trial ──────────────────────────────────────────────────────
 
-    private static int executeTrial(CommandContext<CommandSourceStack> ctx) {
+    /** Outil de test : remet la classe à NONE et efface le cooldown d'épreuve. */
+    private static int executeTrialReset(CommandContext<CommandSourceStack> ctx, ServerPlayer target) {
+        try {
+            ServerPlayer player = target != null ? target : ctx.getSource().getPlayerOrException();
+            PlayerData data = player.getData(ModAttachments.PLAYER_DATA);
+            data.setPlayerClass(PlayerClass.NONE);
+            data.setLastTrialFailMs(0L);
+            player.setData(ModAttachments.PLAYER_DATA, data);
+
+            PlayerEventHandler.applyClassModifiers(player, data); // retire les bonus de classe
+            PlayerEventHandler.sendSyncPacket(player);
+
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                "Classe et cooldown d'épreuve réinitialisés pour " + player.getName().getString()), true);
+            return 1;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal(String.valueOf(e.getMessage())));
+            return 0;
+        }
+    }
+
+    private static int executeTrial(CommandContext<CommandSourceStack> ctx, String className) {
         try {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
-            PlayerData data = player.getData(ModAttachments.PLAYER_DATA);
 
-            if (data.getLevel() < 50 || data.getPlayerClass() != PlayerClass.NONE) {
+            PlayerClass chosen;
+            try {
+                chosen = PlayerClass.valueOf(className.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                chosen = PlayerClass.NONE;
+            }
+            if (chosen == PlayerClass.NONE) {
                 ctx.getSource().sendFailure(
                     Component.translatable("donjonmc.trial.no_eligible"));
                 return 0;
             }
 
-            ClassTrialHandler.startTrial(player);
+            // Niveau, classe déjà acquise, cooldown et session : contrôlés par startTrial
+            ClassTrialHandler.startTrial(player, chosen);
             return 1;
         } catch (Exception e) {
             ctx.getSource().sendFailure(Component.translatable("donjonmc.trial.error"));

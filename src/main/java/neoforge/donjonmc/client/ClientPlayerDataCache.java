@@ -22,6 +22,12 @@ public final class ClientPlayerDataCache {
     public static int   perception         = 0;
     public static int   playerClassOrdinal = 0;
     public static boolean speedEnabled     = true;
+    public static long  lastTrialFailMs    = 0L;
+    public static boolean perceptionEnabled = true;
+    public static int   mobKills           = 0;
+    public static int   deaths             = 0;
+    public static int   playTimeTicks      = 0;
+    public static int   dungeonsCleared    = 0;
 
     public static PlayerClass playerClass() { return PlayerClass.fromOrdinal(playerClassOrdinal); }
 
@@ -57,6 +63,12 @@ public final class ClientPlayerDataCache {
         perception         = p.perception();
         playerClassOrdinal = p.playerClassOrdinal();
         speedEnabled       = p.speedEnabled();
+        lastTrialFailMs    = p.lastTrialFailMs();
+        perceptionEnabled  = p.perceptionEnabled();
+        mobKills           = p.mobKills();
+        deaths             = p.deaths();
+        playTimeTicks      = p.playTimeTicks();
+        dungeonsCleared    = p.dungeonsCleared();
     }
 
     public static int getStat(StatType stat) {

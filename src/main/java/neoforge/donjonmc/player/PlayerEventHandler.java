@@ -449,9 +449,9 @@ public final class PlayerEventHandler {
 
         PlayerData data = player.getData(ModAttachments.PLAYER_DATA);
 
-        // Perception → Glowing sur les monstres hostiles proches
+        // Perception → Glowing sur les monstres hostiles proches (désactivable dans le GUI)
         int perception = data.getPerception();
-        if (perception > 0) {
+        if (perception > 0 && data.isPerceptionEnabled()) {
             double radius = 3.0 + perception * 0.5;
             player.level().getEntitiesOfClass(Monster.class,
                 player.getBoundingBox().inflate(radius)
@@ -475,7 +475,7 @@ public final class PlayerEventHandler {
 
     public static void sendSyncPacket(ServerPlayer player) {
         PacketDistributor.sendToPlayer(player,
-            SyncPlayerDataPacket.from(player.getData(ModAttachments.PLAYER_DATA)));
+            SyncPlayerDataPacket.from(player, player.getData(ModAttachments.PLAYER_DATA)));
     }
 
     private static void levelUp(ServerPlayer player, PlayerData data) {
@@ -502,10 +502,9 @@ public final class PlayerEventHandler {
         RankTeamManager.updatePlayerTeam(player);
         sendSyncPacket(player);
 
-        // Déclenchement de l'épreuve de classe au niveau 50
+        // Niveau 50 : le joueur choisit sa classe dans le menu Hunter (onglet Classe)
         if (data.getLevel() == 50 && data.getPlayerClass() == PlayerClass.NONE) {
-            player.setData(ModAttachments.PLAYER_DATA, data);
-            ClassTrialHandler.startTrial(player);
+            player.sendSystemMessage(Component.translatable("donjonmc.trial.choose_class"));
         }
     }
 }

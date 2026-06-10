@@ -19,7 +19,10 @@ public class PlayerData {
             Codec.FLOAT.optionalFieldOf("mana", 100f).forGetter(d -> 100f),
             Codec.INT.optionalFieldOf("playerClassOrdinal", 0).forGetter(d -> d.playerClassOrdinal),
             Codec.BOOL.optionalFieldOf("speedEnabled", true).forGetter(d -> d.speedEnabled),
-            Codec.LONG.optionalFieldOf("lastRespecMs", 0L).forGetter(d -> d.lastRespecMs)
+            Codec.LONG.optionalFieldOf("lastRespecMs", 0L).forGetter(d -> d.lastRespecMs),
+            Codec.LONG.optionalFieldOf("lastTrialFailMs", 0L).forGetter(d -> d.lastTrialFailMs),
+            Codec.BOOL.optionalFieldOf("perceptionEnabled", true).forGetter(d -> d.perceptionEnabled),
+            Codec.INT.optionalFieldOf("dungeonsCleared", 0).forGetter(d -> d.dungeonsCleared)
         ).apply(instance, PlayerData::new)
     );
 
@@ -35,14 +38,18 @@ public class PlayerData {
     private int playerClassOrdinal;
     private boolean speedEnabled;
     private long lastRespecMs; // timestamp IRL (ms) du dernier respec joueur ; 0 = jamais
+    private long lastTrialFailMs; // timestamp IRL (ms) du dernier échec d'épreuve de classe ; 0 = jamais
+    private boolean perceptionEnabled; // toggle de l'effet Glowing de Perception
+    private int dungeonsCleared; // compteur carrière : donjons terminés (boss tué)
 
     public PlayerData() {
-        this(0, 0L, 0, 0, 0, 0, 0, 0, false, 100f, 0, true, 0L);
+        this(0, 0L, 0, 0, 0, 0, 0, 0, false, 100f, 0, true, 0L, 0L, true, 0);
     }
 
     public PlayerData(int level, long xp, int skillPoints, int strength, int agility,
                       int vitality, int intelligence, int perception, boolean initialized,
-                      float mana, int playerClassOrdinal, boolean speedEnabled, long lastRespecMs) {
+                      float mana, int playerClassOrdinal, boolean speedEnabled, long lastRespecMs,
+                      long lastTrialFailMs, boolean perceptionEnabled, int dungeonsCleared) {
         this.level              = level;
         this.xp                 = xp;
         this.skillPoints        = skillPoints;
@@ -56,6 +63,9 @@ public class PlayerData {
         this.playerClassOrdinal = playerClassOrdinal;
         this.speedEnabled       = speedEnabled;
         this.lastRespecMs       = lastRespecMs;
+        this.lastTrialFailMs    = lastTrialFailMs;
+        this.perceptionEnabled  = perceptionEnabled;
+        this.dungeonsCleared    = dungeonsCleared;
     }
 
     public int     getLevel()        { return level; }
@@ -72,6 +82,12 @@ public class PlayerData {
     public boolean isSpeedEnabled()        { return speedEnabled; }
     public long    getLastRespecMs()       { return lastRespecMs; }
     public void    setLastRespecMs(long v) { this.lastRespecMs = v; }
+    public long    getLastTrialFailMs()       { return lastTrialFailMs; }
+    public void    setLastTrialFailMs(long v) { this.lastTrialFailMs = v; }
+    public boolean isPerceptionEnabled()         { return perceptionEnabled; }
+    public void    setPerceptionEnabled(boolean v) { this.perceptionEnabled = v; }
+    public int     getDungeonsCleared()          { return dungeonsCleared; }
+    public void    incrementDungeonsCleared()    { this.dungeonsCleared++; }
 
     public void setLevel(int level)        { this.level = level; }
     public void setXp(long xp)            { this.xp = xp; }

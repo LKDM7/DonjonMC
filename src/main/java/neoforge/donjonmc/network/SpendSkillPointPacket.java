@@ -60,7 +60,7 @@ public record SpendSkillPointPacket(StatType stat) implements CustomPacketPayloa
             PlayerEventHandler.applyStatModifiers(player, data);
             PlayerEventHandler.applyClassModifiers(player, data);
 
-            PacketDistributor.sendToPlayer(player, SyncPlayerDataPacket.from(data));
+            PacketDistributor.sendToPlayer(player, SyncPlayerDataPacket.from(player, data));
         });
     }
 }

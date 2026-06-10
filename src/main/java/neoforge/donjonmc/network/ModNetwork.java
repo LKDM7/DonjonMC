@@ -78,5 +78,17 @@ public final class ModNetwork {
             SyncDungeonHudPacket::handle
         );
 
+        registrar.playToServer(
+            ChooseClassPacket.TYPE,
+            ChooseClassPacket.STREAM_CODEC,
+            ChooseClassPacket::handle
+        );
+
+        registrar.playToServer(
+            TogglePerceptionPacket.TYPE,
+            TogglePerceptionPacket.STREAM_CODEC,
+            TogglePerceptionPacket::handle
+        );
+
     }
 }

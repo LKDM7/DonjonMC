@@ -1,0 +1,14 @@
+# DonjonMC — Cataclysm utilisé uniquement pour le boss Ignis (épreuve de classe).
+# Tous les spawns naturels de mobs Cataclysm sont coupés.
+# Les sections absentes sont régénérées avec leurs valeurs par défaut au démarrage.
+
+[spawning]
+	deepling_spawn_weight = 0
+	deepling_brute_spawn_weight = 0
+	deepling_angler_spawn_weight = 0
+	deepling_priest_spawn_weight = 0
+	deepling_warlock_spawn_weight = 0
+	coral_golem_spawn_weight = 0
+	amethyst_crab_spawn_weight = 0
+	koboleton_spawn_weight = 0
+	ignited_berserker_spawn_weight = 0

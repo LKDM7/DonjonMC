@@ -10,29 +10,28 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import neoforge.donjonmc.Donjonmc;
 import neoforge.donjonmc.player.ModAttachments;
 import neoforge.donjonmc.player.PlayerData;
-import neoforge.donjonmc.player.PlayerEventHandler;
 
-public record ToggleSpeedPacket() implements CustomPacketPayload {
+/** Client → serveur : active/désactive l'effet Glowing de la stat Perception. */
+public record TogglePerceptionPacket() implements CustomPacketPayload {
 
-    public static final Type<ToggleSpeedPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(Donjonmc.MODID, "toggle_speed"));
+    public static final Type<TogglePerceptionPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(Donjonmc.MODID, "toggle_perception"));
 
-    public static final StreamCodec<FriendlyByteBuf, ToggleSpeedPacket> STREAM_CODEC =
+    public static final StreamCodec<FriendlyByteBuf, TogglePerceptionPacket> STREAM_CODEC =
         new StreamCodec<>() {
-            @Override public ToggleSpeedPacket decode(FriendlyByteBuf buf) { return new ToggleSpeedPacket(); }
-            @Override public void encode(FriendlyByteBuf buf, ToggleSpeedPacket p) {}
+            @Override public TogglePerceptionPacket decode(FriendlyByteBuf buf) { return new TogglePerceptionPacket(); }
+            @Override public void encode(FriendlyByteBuf buf, TogglePerceptionPacket p) {}
         };
 
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(ToggleSpeedPacket packet, IPayloadContext context) {
+    public static void handle(TogglePerceptionPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
             PlayerData data = player.getData(ModAttachments.PLAYER_DATA);
-            data.setSpeedEnabled(!data.isSpeedEnabled());
+            data.setPerceptionEnabled(!data.isPerceptionEnabled());
             player.setData(ModAttachments.PLAYER_DATA, data);
-            PlayerEventHandler.applyStatModifiers(player, data);
             PacketDistributor.sendToPlayer(player, SyncPlayerDataPacket.from(player, data));
         });
     }

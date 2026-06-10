@@ -11,10 +11,13 @@ import neoforge.donjonmc.client.ClientUniqueQuestCache;
 import neoforge.donjonmc.dungeon.DungeonRank;
 import neoforge.donjonmc.quest.UniqueQuestDef;
 import neoforge.donjonmc.quest.UniqueQuestRegistry;
+import neoforge.donjonmc.network.ChooseClassPacket;
 import neoforge.donjonmc.network.RaidActionPacket;
 import neoforge.donjonmc.network.RespecStatsPacket;
 import neoforge.donjonmc.network.SpendSkillPointPacket;
+import neoforge.donjonmc.network.TogglePerceptionPacket;
 import neoforge.donjonmc.network.ToggleSpeedPacket;
+import neoforge.donjonmc.player.ClassTrialHandler;
 import neoforge.donjonmc.player.LevelHelper;
 import neoforge.donjonmc.player.PlayerClass;
 import neoforge.donjonmc.player.StatType;
@@ -23,8 +26,8 @@ import neoforge.donjonmc.raid.RaidRole;
 public class HunterScreen extends Screen {
 
     // Dimensions du panneau
-    private static final int W = 280;
-    private static final int H = 220;
+    private static final int W = 320;
+    private static final int H = 240;
 
     // Layout
     private static final int TAB_Y         = 21;
@@ -34,32 +37,35 @@ public class HunterScreen extends Screen {
     private static final int STATS_FIRST_Y  = STATS_HEADER_Y + 24; // = 73
     private static final int STATS_ROW_H   = 14;
 
-    // Palette — "Système" Solo Leveling (bleu nuit + glow cyan)
-    private static final int C_BG        = 0xC0000814; // overlay écran
-    private static final int C_PANEL_TOP = 0xF00B1730; // dégradé panneau (haut)
-    private static final int C_PANEL_BOT = 0xF005091A; // dégradé panneau (bas)
-    private static final int C_PANEL     = 0xF00A1428; // aplat de secours
-    private static final int C_BORDER    = 0xFF2FD8FF; // bordure cyan vive
-    private static final int C_GLOW      = 0x402FD8FF; // lueur cyan (alpha bas)
-    private static final int C_TAB_ON    = 0xFF0E2A44;
-    private static final int C_TAB_OFF   = 0xFF0A1626;
-    private static final int C_TAB_HOV   = 0xFF123A5C;
-    private static final int C_XP_BG     = 0xFF081626;
+    // Palette — "Système" Solo Leveling modernisé (bleu nuit profond + cyan doux)
+    private static final int C_BG        = 0xD8030710; // overlay écran, plus sombre
+    private static final int C_PANEL_TOP = 0xF80D1830; // dégradé panneau (haut)
+    private static final int C_PANEL_BOT = 0xF804060E; // dégradé panneau (bas)
+    private static final int C_PANEL     = 0xF80A1426; // aplat de secours
+    private static final int C_BORDER    = 0xFF2BB8DD; // bordure cyan adoucie
+    private static final int C_BORDER_SOFT = 0x4030B8E0; // séparateurs discrets
+    private static final int C_GLOW      = 0x3328C8F0; // lueur cyan (alpha bas)
+    private static final int C_TAB_ON    = 0xFF12304E;
+    private static final int C_TAB_OFF   = 0xFF071120;
+    private static final int C_TAB_HOV   = 0xFF143C5C;
+    private static final int C_XP_BG     = 0xFF060F1C;
     private static final int C_XP_FG     = 0xFF1E9AD0; // bas du dégradé de barre
     private static final int C_XP_FG2    = 0xFF7BE9FF; // haut du dégradé de barre
     private static final int C_TEXT      = 0xFFE6F4FF;
-    private static final int C_DIM       = 0xFF6E8CA8;
+    private static final int C_DIM       = 0xFF647F9C;
     private static final int C_GOLD      = 0xFFFFD86B;
-    private static final int C_ACCENT    = 0xFF4FE3FF; // cyan accent (titre, soulignés)
+    private static final int C_ACCENT    = 0xFF53E0FF; // cyan accent (titre, soulignés)
     private static final int C_PLUS      = 0xFF0E5A6E;
     private static final int C_PLUS_H    = 0xFF1A86A8;
+    private static final int C_ROW_ALT   = 0x1840C8F0; // fond alterné des rangées
 
     private int activeTab = 0;
     private int left, top;
 
     // Stats tab click zones
-    private int speedToggleY = -1;
-    private int respecBtnY   = -1;
+    private int speedToggleY      = -1;
+    private int perceptionToggleY = -1;
+    private int respecBtnY        = -1;
 
     // Quests tab click zone (toggle HUD)
     private int questHudToggleY = -1;
@@ -111,26 +117,39 @@ public class HunterScreen extends Screen {
         // Fond semi-transparent sur tout l'écran
         g.fill(0, 0, this.width, this.height, C_BG);
 
-        // Panneau principal : dégradé bleu nuit + lueur + bordure cyan + accents de coin
+        // Panneau principal : dégradé bleu nuit + double lueur + accents de coin
         g.fillGradient(left, top, left + W, top + H, C_PANEL_TOP, C_PANEL_BOT);
         glowBorder(g, left, top, W, H);
         corners(g, left, top, W, H);
 
-        // Titre "Système" avec losange
-        g.drawCenteredString(this.font, "◈ " + t("donjonmc.gui.title"), left + W / 2, top + 9, C_ACCENT);
-        g.fill(left + 1, top + 19, left + W - 1, top + 20, C_BORDER);
+        // En-tête : bandeau dégradé + titre + soulignement en fondu
+        g.fillGradient(left + 1, top + 1, left + W - 1, top + 19, 0x5018486E, 0x00000000);
+        g.drawCenteredString(this.font, "◈ " + t("donjonmc.gui.title"), left + W / 2, top + 7, C_ACCENT);
+        fadeLine(g, left + 14, top + 18, W - 28, C_ACCENT);
 
         renderTabs(g, mx, my);
-        g.fill(left + 1, top + CONTENT_Y - 2, left + W - 1, top + CONTENT_Y - 1, C_BORDER);
 
         switch (activeTab) {
             case 0 -> renderProfile(g);
             case 1 -> renderStats(g, mx, my);
-            case 2 -> renderQuests(g);
-            case 3 -> renderClasse(g);
+            case 2 -> renderQuests(g, mx, my);
+            case 3 -> renderClasse(g, mx, my);
             case 4 -> renderRaid(g, mx, my);
             case 5 -> renderUniques(g);
         }
+    }
+
+    /** Ligne horizontale qui s'estompe vers les bords (effet "énergie"). */
+    private void fadeLine(GuiGraphics g, int x, int y, int w, int color) {
+        int steps = 8;
+        int seg = Math.max(1, w / (2 * steps));
+        for (int i = 0; i < steps; i++) {
+            int alpha = 0x20 + (0xD0 * (i + 1) / steps);
+            int c = (color & 0x00FFFFFF) | (alpha << 24);
+            g.fill(x + i * seg, y, x + (i + 1) * seg, y + 1, c);
+            g.fill(x + w - (i + 1) * seg, y, x + w - i * seg, y + 1, c);
+        }
+        g.fill(x + steps * seg, y, x + w - steps * seg, y + 1, color);
     }
 
     private static final int TAB_COUNT = 6;
@@ -144,6 +163,9 @@ public class HunterScreen extends Screen {
             t("donjonmc.gui.tab.raid"),
             t("donjonmc.gui.tab.uniques")
         };
+        // Bandeau de fond des onglets
+        g.fill(left + 1, top + TAB_Y, left + W - 1, top + TAB_Y + TAB_H, C_TAB_OFF);
+
         int tw = (W - 2) / TAB_COUNT;
         for (int i = 0; i < TAB_COUNT; i++) {
             int tx = left + 1 + i * tw;
@@ -151,10 +173,49 @@ public class HunterScreen extends Screen {
             int ty = top + TAB_Y;
             boolean on  = activeTab == i;
             boolean hov = mx >= tx && mx < tx + tW && my >= ty && my < ty + TAB_H;
-            g.fill(tx, ty, tx + tW, ty + TAB_H, on ? C_TAB_ON : (hov ? C_TAB_HOV : C_TAB_OFF));
-            if (on) g.fill(tx, ty + TAB_H - 1, tx + tW, ty + TAB_H, C_ACCENT);
-            g.drawCenteredString(this.font, labels[i], tx + tW / 2, ty + 5, on ? C_TEXT : C_DIM);
+
+            if (on) {
+                g.fillGradient(tx, ty, tx + tW, ty + TAB_H, C_TAB_ON, 0xFF0A1C30);
+                g.fill(tx, ty + TAB_H - 2, tx + tW, ty + TAB_H, C_ACCENT); // soulignement épais
+                g.fill(tx, ty, tx + tW, ty + 1, 0x6053E0FF);               // liseré haut subtil
+            } else if (hov) {
+                g.fill(tx, ty, tx + tW, ty + TAB_H, C_TAB_HOV);
+                g.fill(tx, ty + TAB_H - 1, tx + tW, ty + TAB_H, 0x8053E0FF);
+            }
+            // Séparateur vertical discret entre onglets
+            if (i > 0) g.fill(tx, ty + 4, tx + 1, ty + TAB_H - 4, C_BORDER_SOFT);
+
+            g.drawCenteredString(this.font, labels[i], tx + tW / 2, ty + 5,
+                on ? 0xFFFFFFFF : (hov ? C_TEXT : C_DIM));
         }
+        // Ligne de base sous le bandeau
+        g.fill(left + 1, top + TAB_Y + TAB_H, left + W - 1, top + TAB_Y + TAB_H + 1, C_BORDER_SOFT);
+    }
+
+    // ─── Boutons modernes ────────────────────────────────────────────────────
+
+    /** Toggle vert/rouge avec liseré haut lumineux et hover éclairci. */
+    private void btnToggle(GuiGraphics g, int x, int y, int w, int h,
+                           String label, boolean hovered, boolean on) {
+        int base = on ? (hovered ? 0xFF155A38 : 0xFF0E3F28) : (hovered ? 0xFF551515 : 0xFF330D0D);
+        int edge = on ? 0xFF2FBF6F : 0xFFB04040;
+        g.fill(x, y, x + w, y + h, base);
+        g.fill(x, y, x + w, y + 1, (edge & 0x00FFFFFF) | 0x80000000);
+        border(g, x, y, w, h, (edge & 0x00FFFFFF) | 0x90000000);
+        g.drawCenteredString(this.font, label, x + w / 2, y + (h - 8) / 2 + 1,
+            on ? 0xFFB8FFD0 : 0xFFFFB8B8);
+    }
+
+    /** Bouton d'action cyan (respec, épreuve, créer un raid…). */
+    private void btnAction(GuiGraphics g, int x, int y, int w, int h,
+                           String label, boolean hovered, boolean enabled, int textColor) {
+        int base = !enabled ? 0xFF131722 : (hovered ? 0xFF17506E : 0xFF0E3850);
+        int edge = !enabled ? 0xFF2A3344 : C_BORDER;
+        g.fill(x, y, x + w, y + h, base);
+        if (enabled) g.fill(x, y, x + w, y + 1, 0x8053E0FF);
+        border(g, x, y, w, h, (edge & 0x00FFFFFF) | (enabled ? 0xB0000000 : 0x70000000));
+        g.drawCenteredString(this.font, label, x + w / 2, y + (h - 8) / 2 + 1,
+            enabled ? textColor : C_DIM);
     }
 
     private void renderProfile(GuiGraphics g) {
@@ -166,38 +227,49 @@ public class HunterScreen extends Screen {
         String rank = LevelHelper.rankForLevel(lvl);
         int rankCol = LevelHelper.rankColor(lvl);
 
-        int y  = top + CONTENT_Y + 6;
-        int cx = left + 12;
+        int y  = top + CONTENT_Y + 8;
+        int cx = left + 14;
 
-        // Nom | Rang
+        // Nom | badge de rang encadré
         String hunterStr = t("donjonmc.gui.profile.hunter") + name;
-        String rankStr   = t("donjonmc.gui.profile.rank") + rank;
         g.drawString(this.font, hunterStr, cx, y, C_TEXT);
-        g.drawString(this.font, rankStr, left + W - 12 - this.font.width(rankStr), y, rankCol);
+        String rankStr = t("donjonmc.gui.profile.rank") + rank;
+        int bw = this.font.width(rankStr) + 10;
+        int bx = left + W - 14 - bw;
+        g.fill(bx, y - 4, bx + bw, y + 10, (rankCol & 0x00FFFFFF) | 0x28000000);
+        border(g, bx, y - 4, bw, 14, (rankCol & 0x00FFFFFF) | 0xA0000000);
+        g.drawString(this.font, rankStr, bx + 5, y - 1, rankCol);
 
-        // Niveau
-        y += 16;
+        // Niveau (gros chiffre doré)
+        y += 20;
         String levelLabel = t("donjonmc.gui.profile.level");
         g.drawString(this.font, levelLabel, cx, y, C_DIM);
         g.drawString(this.font, String.valueOf(lvl), cx + this.font.width(levelLabel), y, C_GOLD);
 
-        // Barre XP
+        // Barre XP : libellé + pourcentage à droite
         y += 18;
-        g.drawString(this.font, t("donjonmc.gui.profile.xp"), cx, y, C_DIM);
-        y += 11;
-        int barX = cx, barW = W - 24;
         double xpFrac = xpMax > 0 ? (double) Math.min(xp, xpMax) / xpMax : 0;
-        glowBar(g, barX, y, barW, 8, xpFrac, C_XP_FG2, C_XP_FG);
+        g.drawString(this.font, t("donjonmc.gui.profile.xp"), cx, y, C_DIM);
+        String pctStr = (int) (xpFrac * 100) + " %";
+        g.drawString(this.font, pctStr, left + W - 14 - this.font.width(pctStr), y, C_ACCENT);
         y += 11;
+        glowBar(g, cx, y, W - 28, 9, xpFrac, C_XP_FG2, C_XP_FG);
+        y += 12;
         g.drawCenteredString(this.font, xp + " / " + xpMax, left + W / 2, y, C_DIM);
 
-        // Classe
-        y += 18;
+        // Séparateur
+        y += 14;
+        fadeLine(g, cx, y, W - 28, C_BORDER);
+
+        // Classe avec pastille de couleur
+        y += 8;
         PlayerClass cls   = ClientPlayerDataCache.playerClass();
         String clsLabel   = t("donjonmc.gui.profile.class");
         String clsName    = Component.translatable(cls.nameLangKey()).getString();
         g.drawString(this.font, clsLabel, cx, y, C_DIM);
-        g.drawString(this.font, clsName, cx + this.font.width(clsLabel), y, cls.color);
+        int chipX = cx + this.font.width(clsLabel);
+        g.fill(chipX, y + 1, chipX + 6, y + 7, cls.color);
+        g.drawString(this.font, clsName, chipX + 10, y, cls.color);
 
         // Points de compétence
         y += 14;
@@ -205,11 +277,37 @@ public class HunterScreen extends Screen {
         g.drawString(this.font, spLabel, cx, y, C_DIM);
         g.drawString(this.font, String.valueOf(sp),
             cx + this.font.width(spLabel), y, sp > 0 ? C_GOLD : C_TEXT);
+
+        // ── Encart carrière (stats vanilla persistantes + compteur donjons) ───
+        y += 14;
+        fadeLine(g, cx, y, W - 28, C_BORDER);
+        y += 6;
+        g.drawString(this.font, t("donjonmc.gui.profile.career"), cx, y, C_ACCENT);
+        y += 12;
+
+        int colW = (W - 28) / 2;
+        long playSecs = ClientPlayerDataCache.playTimeTicks / 20L;
+        String playStr = (playSecs / 3600) + "h " + (playSecs % 3600) / 60 + "min";
+
+        careerStat(g, cx,        y,      t("donjonmc.gui.profile.career.kills"),
+            String.valueOf(ClientPlayerDataCache.mobKills));
+        careerStat(g, cx + colW, y,      t("donjonmc.gui.profile.career.dungeons"),
+            String.valueOf(ClientPlayerDataCache.dungeonsCleared));
+        careerStat(g, cx,        y + 12, t("donjonmc.gui.profile.career.deaths"),
+            String.valueOf(ClientPlayerDataCache.deaths));
+        careerStat(g, cx + colW, y + 12, t("donjonmc.gui.profile.career.playtime"), playStr);
+    }
+
+    /** Une ligne d'encart carrière : libellé gris + valeur dorée alignée. */
+    private void careerStat(GuiGraphics g, int x, int y, String label, String value) {
+        g.drawString(this.font, label, x, y, C_DIM);
+        g.drawString(this.font, value, x + this.font.width(label) + 4, y, C_GOLD);
     }
 
     private void renderStats(GuiGraphics g, int mx, int my) {
-        speedToggleY = -1;
-        respecBtnY   = -1;
+        speedToggleY      = -1;
+        perceptionToggleY = -1;
+        respecBtnY        = -1;
         int sp = ClientPlayerDataCache.skillPoints;
         int y  = top + STATS_HEADER_Y;
         int cx = left + 12;
@@ -220,21 +318,37 @@ public class HunterScreen extends Screen {
             cx + this.font.width(spLabel), y, sp > 0 ? C_GOLD : C_TEXT);
 
         y += 16;
-        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        fadeLine(g, cx, y, W - 24, C_BORDER);
 
         for (StatType stat : StatType.values()) {
             int ry = top + STATS_FIRST_Y + stat.ordinal() * STATS_ROW_H;
+
+            // Rangée alternée + mini-jauge de stat
+            if (stat.ordinal() % 2 == 0) {
+                g.fill(cx - 2, ry - 3, left + W - 10, ry + 11, C_ROW_ALT);
+            }
             String statName = Component.translatable(stat.langKey()).getString();
             g.drawString(this.font, statName, cx + 3, ry, C_TEXT);
-            g.drawString(this.font,
-                String.valueOf(ClientPlayerDataCache.getStat(stat)), left + 130, ry, C_GOLD);
+
+            int statVal = ClientPlayerDataCache.getStat(stat);
+            g.drawString(this.font, String.valueOf(statVal), left + 130, ry, C_GOLD);
+
+            // Mini-jauge (0..50) à droite de la valeur
+            int gx = left + 170;
+            int gw = left + W - 14 - gx;
+            if (sp > 0) gw -= 24; // place pour le bouton +
+            g.fill(gx, ry + 2, gx + gw, ry + 6, C_XP_BG);
+            int gfill = (int) (gw * Math.min(statVal, 50) / 50.0);
+            if (gfill > 0) g.fillGradient(gx, ry + 2, gx + gfill, ry + 6, C_XP_FG2, C_XP_FG);
+            border(g, gx, ry + 2, gw, 4, C_BORDER_SOFT);
 
             if (sp > 0) {
                 int bx  = left + 148;
                 int by  = ry - 1;
                 boolean hov = mx >= bx && mx < bx + 14 && my >= by && my < by + 11;
                 g.fill(bx, by, bx + 14, by + 11, hov ? C_PLUS_H : C_PLUS);
-                border(g, bx, by, 14, 11, 0xFF145A32);
+                g.fill(bx, by, bx + 14, by + 1, 0x8053E0FF);
+                border(g, bx, by, 14, 11, (C_BORDER & 0x00FFFFFF) | 0x90000000);
                 g.drawCenteredString(this.font, "+", bx + 7, by + 1, 0xFFFFFFFF);
             }
         }
@@ -242,32 +356,34 @@ public class HunterScreen extends Screen {
         // ── Toggle vitesse Agilité ────────────────────────────────────────────
         int btnW = W - 24;
         int toggleY = top + STATS_FIRST_Y + StatType.values().length * STATS_ROW_H + 8;
-        g.fill(cx, toggleY - 4, cx + btnW, toggleY - 3, C_BORDER);
+        fadeLine(g, cx, toggleY - 4, btnW, C_BORDER);
 
         boolean speedOn = ClientPlayerDataCache.speedEnabled;
         boolean hSpd = mx >= cx && mx < cx + btnW && my >= toggleY && my < toggleY + 13;
-        int bgOn  = hSpd ? 0xFF1A7A2A : C_PLUS;
-        int bgOff = hSpd ? 0xFF661111 : 0xFF330000;
-        g.fill(cx, toggleY, cx + btnW, toggleY + 13, speedOn ? bgOn : bgOff);
-        border(g, cx, toggleY, btnW, 13, speedOn ? 0xFF145A32 : 0xFF991111);
-
-        String label = t("donjonmc.gui.stats.speed_toggle") + " : "
-            + (speedOn ? t("donjonmc.gui.stats.speed_on") : t("donjonmc.gui.stats.speed_off"));
-        g.drawCenteredString(this.font, label, cx + btnW / 2, toggleY + 3,
-            speedOn ? 0xFFAAFFAA : 0xFFFFAAAA);
+        btnToggle(g, cx, toggleY, btnW, 13,
+            t("donjonmc.gui.stats.speed_toggle") + " : "
+                + (speedOn ? t("donjonmc.gui.stats.speed_on") : t("donjonmc.gui.stats.speed_off")),
+            hSpd, speedOn);
         speedToggleY = toggleY;
 
+        // ── Toggle Glowing Perception ─────────────────────────────────────────
+        int percY = toggleY + 17;
+        boolean percOn = ClientPlayerDataCache.perceptionEnabled;
+        boolean hPerc = mx >= cx && mx < cx + btnW && my >= percY && my < percY + 13;
+        btnToggle(g, cx, percY, btnW, 13,
+            t("donjonmc.gui.stats.perception_toggle") + " : "
+                + (percOn ? t("donjonmc.gui.stats.speed_on") : t("donjonmc.gui.stats.speed_off")),
+            hPerc, percOn);
+        perceptionToggleY = percY;
+
         // ── Bouton respec ─────────────────────────────────────────────────────
-        int respecY = toggleY + 17;
+        int respecY = percY + 17;
         boolean hR = mx >= cx && mx < cx + btnW && my >= respecY && my < respecY + 13;
-        g.fill(cx, respecY, cx + btnW, respecY + 13, hR ? C_PLUS_H : C_PLUS);
-        border(g, cx, respecY, btnW, 13, 0xFF145A32);
-        g.drawCenteredString(this.font, t("donjonmc.gui.stats.respec"),
-            cx + btnW / 2, respecY + 3, C_GOLD);
+        btnAction(g, cx, respecY, btnW, 13, t("donjonmc.gui.stats.respec"), hR, true, C_GOLD);
         respecBtnY = respecY;
     }
 
-    private void renderQuests(GuiGraphics g) {
+    private void renderQuests(GuiGraphics g, int mx, int my) {
         questHudToggleY = -1;
         int cx = left + 12;
         int y  = top + CONTENT_Y + 6;
@@ -275,7 +391,7 @@ public class HunterScreen extends Screen {
         // Titre + timer ou statut
         g.drawCenteredString(this.font, t("donjonmc.gui.quests.title"), left + W / 2, y, C_TEXT);
         y += 14;
-        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        fadeLine(g, cx, y, W - 24, C_BORDER);
         y += 6;
 
         long secs = ClientDailyQuestCache.remainingSeconds;
@@ -341,19 +457,15 @@ public class HunterScreen extends Screen {
 
         // ── Toggle HUD ────────────────────────────────────────────────────────
         y = top + H - 26;
-        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        fadeLine(g, cx, y, W - 24, C_BORDER);
         y += 6;
         questHudToggleY = y;
         boolean hudOn = ClientDailyQuestCache.hudVisible;
-        boolean hov   = false; // hover géré par mouseClicked
         int btnW = W - 24;
-        g.fill(cx, y, cx + btnW, y + 13,
-            hudOn ? C_PLUS : 0xFF330000);
-        border(g, cx, y, btnW, 13,
-            hudOn ? 0xFF145A32 : 0xFF991111);
-        String btnLabel = t(hudOn ? "donjonmc.gui.quests.hud_hide" : "donjonmc.gui.quests.hud_show");
-        g.drawCenteredString(this.font, btnLabel, cx + btnW / 2, y + 3,
-            hudOn ? 0xFFAAFFAA : 0xFFFFAAAA);
+        boolean hov = mx >= cx && mx < cx + btnW && my >= y && my < y + 13;
+        btnToggle(g, cx, y, btnW, 13,
+            t(hudOn ? "donjonmc.gui.quests.hud_hide" : "donjonmc.gui.quests.hud_show"),
+            hov, hudOn);
     }
 
     private void renderUniques(GuiGraphics g) {
@@ -362,7 +474,7 @@ public class HunterScreen extends Screen {
 
         g.drawCenteredString(this.font, t("donjonmc.gui.uniques.title"), left + W / 2, y, C_TEXT);
         y += 12;
-        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        fadeLine(g, cx, y, W - 24, C_BORDER);
         y += 6;
 
         int[]     prog = ClientUniqueQuestCache.progress;
@@ -397,8 +509,12 @@ public class HunterScreen extends Screen {
         }
     }
 
-    private void renderClasse(GuiGraphics g) {
-        PlayerClass cls    = ClientPlayerDataCache.playerClass();
+    private void renderClasse(GuiGraphics g, int mx, int my) {
+        PlayerClass cls = ClientPlayerDataCache.playerClass();
+        if (cls == PlayerClass.NONE) {
+            renderClassChoice(g, mx, my);
+            return;
+        }
         String clsName     = Component.translatable(cls.nameLangKey()).getString();
         String clsDesc     = Component.translatable(cls.descLangKey()).getString();
         int cx = left + 12;
@@ -408,7 +524,7 @@ public class HunterScreen extends Screen {
         g.fill(cx, y, cx + 6, y + this.font.lineHeight, cls.color);
         g.drawString(this.font, clsName, cx + 10, y, cls.color);
         y += 14;
-        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        fadeLine(g, cx, y, W - 24, C_BORDER);
 
         // Description (multiligne)
         y += 8;
@@ -420,7 +536,7 @@ public class HunterScreen extends Screen {
 
         // Bonus de classe
         y += 6;
-        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        fadeLine(g, cx, y, W - 24, C_BORDER);
         y += 6;
         g.drawString(this.font, t("donjonmc.gui.class.bonus"), cx, y, C_TEXT);
         y += 12;
@@ -441,6 +557,91 @@ public class HunterScreen extends Screen {
             y += 24;
             g.drawString(this.font, t("donjonmc.gui.class.command"), cx, y, C_DIM);
         }
+    }
+
+    // ─── Choix de classe (niveau 50, épreuve) ────────────────────────────────
+
+    private static final PlayerClass[] CHOOSABLE = {
+        PlayerClass.TANK, PlayerClass.ASSASSIN, PlayerClass.MAGE, PlayerClass.HEALER
+    };
+    private static final int CARD_GAP = 6;
+    private static final int CARD_H   = 52;
+
+    private int selectedClassOrdinal = -1;
+
+    private int cardW()  { return (W - 24 - CARD_GAP) / 2; }
+    private int cardX(int i) { return left + 12 + (i % 2) * (cardW() + CARD_GAP); }
+    private int cardY(int i) { return top + CONTENT_Y + 18 + (i / 2) * (CARD_H + CARD_GAP); }
+    private int trialBtnY()  { return top + H - 22; }
+
+    /** Cooldown restant après un échec d'épreuve, calculé depuis le cache client. */
+    private static long trialCooldownRemainingMs() {
+        long last = ClientPlayerDataCache.lastTrialFailMs;
+        if (last <= 0) return 0;
+        long elapsed = System.currentTimeMillis() - last;
+        return Math.max(0, ClassTrialHandler.COOLDOWN_MS - elapsed);
+    }
+
+    private void renderClassChoice(GuiGraphics g, int mx, int my) {
+        g.drawCenteredString(this.font, t("donjonmc.gui.class.choose_title"),
+            left + W / 2, top + CONTENT_Y + 6, C_TEXT);
+
+        for (int i = 0; i < CHOOSABLE.length; i++) {
+            PlayerClass c = CHOOSABLE[i];
+            int bx = cardX(i), by = cardY(i), bw = cardW();
+            boolean sel = selectedClassOrdinal == c.ordinal();
+            boolean hov = mx >= bx && mx < bx + bw && my >= by && my < by + CARD_H;
+
+            // Carte : fond dégradé, bordure colorée à la sélection, hover lumineux
+            if (sel) {
+                g.fillGradient(bx, by, bx + bw, by + CARD_H, C_TAB_ON, 0xFF0A1C30);
+                border(g, bx, by, bw, CARD_H, C_ACCENT);
+                g.fill(bx, by, bx + bw, by + 1, c.color); // liseré haut couleur classe
+            } else {
+                g.fill(bx, by, bx + bw, by + CARD_H, hov ? C_TAB_HOV : C_TAB_OFF);
+                border(g, bx, by, bw, CARD_H, hov ? C_BORDER : 0xFF24304A);
+            }
+
+            // Pastille + nom
+            g.fill(bx + 5, by + 5, bx + 9, by + 11, c.color);
+            g.drawString(this.font, Component.translatable(c.nameLangKey()).getString(),
+                bx + 13, by + 4, c.color);
+
+            // Description (2 lignes max)
+            int ly = by + 16;
+            var lines = this.font.split(Component.translatable(c.descLangKey()), bw - 10);
+            for (int l = 0; l < Math.min(2, lines.size()); l++) {
+                g.drawString(this.font, lines.get(l), bx + 5, ly, C_DIM);
+                ly += this.font.lineHeight;
+            }
+
+            // Aperçu du sort de classe
+            g.drawString(this.font,
+                t("donjonmc.gui.class.spell." + c.name().toLowerCase(java.util.Locale.ROOT)),
+                bx + 5, by + CARD_H - 11, C_GOLD);
+        }
+
+        // ── Bouton "Commencer l'épreuve" ──────────────────────────────────────
+        int cx = left + 12, btnW = W - 24, by = trialBtnY();
+        long cooldown = trialCooldownRemainingMs();
+        boolean lowLevel = ClientPlayerDataCache.level < 50;
+        boolean enabled  = !lowLevel && cooldown <= 0 && selectedClassOrdinal > 0;
+        boolean hovBtn   = mx >= cx && mx < cx + btnW && my >= by && my < by + 15;
+
+        String label;
+        if (lowLevel) {
+            label = t("donjonmc.gui.class.level_required");
+        } else if (cooldown > 0) {
+            long h = cooldown / 3_600_000L;
+            long m = (cooldown % 3_600_000L) / 60_000L;
+            label = Component.translatable("donjonmc.gui.class.cooldown_wait", h, m).getString();
+        } else if (selectedClassOrdinal <= 0) {
+            label = t("donjonmc.gui.class.select_hint");
+        } else {
+            label = t("donjonmc.gui.class.start_trial");
+        }
+
+        btnAction(g, cx, by, btnW, 15, label, hovBtn, enabled, 0xFFFFFFFF);
     }
 
     private void renderRaid(GuiGraphics g, int mx, int my) {
@@ -476,7 +677,7 @@ public class HunterScreen extends Screen {
                 border(g, dx, y, 68, 14, 0xFF991111);
                 g.drawCenteredString(this.font, t("donjonmc.raid.decline"), dx + 34, y + 3, 0xFFFFAAAA);
                 y += 20;
-                g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+                fadeLine(g, cx, y, W - 24, C_BORDER);
                 y += 8;
             }
 
@@ -510,7 +711,7 @@ public class HunterScreen extends Screen {
         g.drawString(this.font, "♛ " + leaderStr, cx + this.font.width(leaderLabel), y, C_GOLD);
 
         y += 13;
-        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        fadeLine(g, cx, y, W - 24, C_BORDER);
         y += 4;
 
         for (var member : ClientRaidCache.members) {
@@ -525,7 +726,7 @@ public class HunterScreen extends Screen {
 
         // ── Role selector ─────────────────────────────────────────────────────
         y += 4;
-        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        fadeLine(g, cx, y, W - 24, C_BORDER);
         y += 5;
         g.drawString(this.font, t("donjonmc.raid.role_label"), cx, y, C_DIM);
         y += 11;
@@ -550,7 +751,7 @@ public class HunterScreen extends Screen {
         y += 14;
 
         // ── Portal section ────────────────────────────────────────────────────
-        g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+        fadeLine(g, cx, y, W - 24, C_BORDER);
         y += 4;
         if (ClientRaidCache.portalRankOrdinal >= 0) {
             DungeonRank pRank = DungeonRank.fromOrdinal(ClientRaidCache.portalRankOrdinal);
@@ -570,7 +771,7 @@ public class HunterScreen extends Screen {
         if (ClientRaidCache.isLeader && !ClientRaidCache.invitablePlayers.isEmpty()) {
             java.util.List<String> all = ClientRaidCache.invitablePlayers;
 
-            g.fill(cx, y, left + W - 12, y + 1, C_BORDER);
+            fadeLine(g, cx, y, W - 24, C_BORDER);
             y += 5;
             g.drawString(this.font, t("donjonmc.raid.invite_player") + " (" + all.size() + ")", cx, y, C_DIM);
             y += 11;
@@ -680,9 +881,37 @@ public class HunterScreen extends Screen {
                 PacketDistributor.sendToServer(new ToggleSpeedPacket());
                 return true;
             }
+            if (perceptionToggleY >= 0 && my >= perceptionToggleY && my < perceptionToggleY + 13
+                    && mx >= cx && mx < cx + btnW) {
+                PacketDistributor.sendToServer(new TogglePerceptionPacket());
+                return true;
+            }
             if (respecBtnY >= 0 && my >= respecBtnY && my < respecBtnY + 13
                     && mx >= cx && mx < cx + btnW) {
                 PacketDistributor.sendToServer(new RespecStatsPacket());
+                return true;
+            }
+        }
+
+        if (activeTab == 3 && ClientPlayerDataCache.playerClass() == PlayerClass.NONE) {
+            // Sélection d'une carte de classe
+            for (int i = 0; i < CHOOSABLE.length; i++) {
+                int bx = cardX(i), by = cardY(i);
+                if (mx >= bx && mx < bx + cardW() && my >= by && my < by + CARD_H) {
+                    selectedClassOrdinal = CHOOSABLE[i].ordinal();
+                    return true;
+                }
+            }
+            // Bouton "Commencer l'épreuve"
+            int cx = left + 12, btnW = W - 24, by = trialBtnY();
+            if (mx >= cx && mx < cx + btnW && my >= by && my < by + 15) {
+                boolean enabled = ClientPlayerDataCache.level >= 50
+                    && trialCooldownRemainingMs() <= 0
+                    && selectedClassOrdinal > 0;
+                if (enabled) {
+                    PacketDistributor.sendToServer(new ChooseClassPacket(selectedClassOrdinal));
+                    onClose();
+                }
                 return true;
             }
         }

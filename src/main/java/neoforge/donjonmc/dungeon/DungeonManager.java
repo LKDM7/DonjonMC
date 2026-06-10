@@ -542,6 +542,11 @@ public final class DungeonManager {
             if (sp != null) {
                 DailyQuestManager.getInstance().onDungeonCompleted(
                     sp, instance.getRank(), elapsedTicks, groupSize);
+
+                // Compteur carrière (persistant dans PlayerData)
+                var data = sp.getData(ModAttachments.PLAYER_DATA);
+                data.incrementDungeonsCleared();
+                sp.setData(ModAttachments.PLAYER_DATA, data);
             }
         }
     }

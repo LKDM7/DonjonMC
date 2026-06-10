@@ -1,0 +1,15 @@
+﻿{
+    "structures":  [
+
+                   ],
+    "placement":  {
+                      "type":  "cataclysm:cataclysm_random_spread",
+                      "salt":  5872139439,
+                      "spacing":  80,
+                      "separation":  50,
+                      "super_exclusion_zone":  {
+                                                   "chunk_count":  10,
+                                                   "other_set":  "#cataclysm:frosted_prison_avoid"
+                                               }
+                  }
+}
