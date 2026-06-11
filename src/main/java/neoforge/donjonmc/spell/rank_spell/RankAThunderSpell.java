@@ -8,6 +8,8 @@ import io.redspace.ironsspellbooks.api.spells.CastType;
 import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,6 +17,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * Sort rang A — "Foudre du Chasseur"
@@ -45,6 +48,15 @@ public class RankAThunderSpell extends AbstractSpell {
     @Override public CastType getCastType() { return CastType.INSTANT; }
     @Override public AnimationHolder getCastStartAnimation() { return SpellAnimations.OVERHEAD_MELEE_SWING_ANIMATION; }
     @Override public AnimationHolder getCastFinishAnimation() { return AnimationHolder.pass(); }
+
+    @Override
+    public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
+        return List.of(
+            Component.translatable("spell.donjonmc.rank_a_thunder.desc"),
+            Component.translatable("ui.irons_spellbooks.max_victims", 1 + spellLevel),
+            Component.translatable("ui.irons_spellbooks.distance", 30)
+        );
+    }
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity,

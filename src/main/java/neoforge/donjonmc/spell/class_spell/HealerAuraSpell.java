@@ -8,7 +8,10 @@ import io.redspace.ironsspellbooks.api.spells.CastType;
 import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
+import io.redspace.ironsspellbooks.api.util.Utils;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -16,6 +19,8 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+
+import java.util.List;
 
 /**
  * Sort de classe Healer — "Aura de Vie"
@@ -46,6 +51,16 @@ public class HealerAuraSpell extends AbstractSpell {
     @Override public CastType getCastType() { return CastType.LONG; }
     @Override public AnimationHolder getCastStartAnimation() { return SpellAnimations.CAST_KNEELING_PRAYER; }
     @Override public AnimationHolder getCastFinishAnimation() { return SpellAnimations.ANIMATION_LONG_CAST_FINISH; }
+
+    @Override
+    public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
+        return List.of(
+            Component.translatable("spell.donjonmc.healer_aura.desc"),
+            Component.translatable("ui.irons_spellbooks.healing", Utils.stringTruncation(4f + spellLevel * 3f, 1)),
+            Component.translatable("ui.irons_spellbooks.radius", (int) (10.0 + spellLevel * 2.0)),
+            Component.translatable("ui.irons_spellbooks.effect_length", Utils.timeFromTicks((4 + spellLevel * 2) * 20, 1))
+        );
+    }
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity,

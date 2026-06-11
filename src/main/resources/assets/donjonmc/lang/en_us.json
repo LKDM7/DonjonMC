@@ -414,5 +414,15 @@
   "spell.donjonmc.tank_shield":       "Guardian's Rampart",
   "spell.donjonmc.assassin_blink":    "Shadow Strike",
   "spell.donjonmc.mage_arcane_deluge":"Arcane Deluge",
-  "spell.donjonmc.healer_aura":       "Life Aura"
+  "spell.donjonmc.healer_aura":       "Life Aura",
+
+  "spell.donjonmc.rank_d_shockwave.desc":  "Shockwave that violently knocks back all nearby enemies.",
+  "spell.donjonmc.rank_c_flame.desc":      "Sets the nearest enemy ablaze.",
+  "spell.donjonmc.rank_b_frost.desc":      "Frost storm that wounds and slows all surrounding enemies.",
+  "spell.donjonmc.rank_a_thunder.desc":    "Strikes the nearest enemies with lightning.",
+  "spell.donjonmc.rank_s_shadow_veil.desc":"Curses all surrounding enemies with Wither, Blindness, Slowness and Glowing.",
+  "spell.donjonmc.tank_shield.desc":       "Wraps you in holy protection.",
+  "spell.donjonmc.assassin_blink.desc":    "Teleports you behind the nearest enemy, wounding and blinding it.",
+  "spell.donjonmc.mage_arcane_deluge.desc":"Hammers the nearest enemies with arcane damage.",
+  "spell.donjonmc.healer_aura.desc":       "Heals and regenerates the caster and nearby allied players."
 }

@@ -401,6 +401,16 @@
   "spell.donjonmc.mage_arcane_deluge":"Déluge Arcanique",
   "spell.donjonmc.healer_aura":       "Aura de Vie",
 
+  "spell.donjonmc.rank_d_shockwave.desc":  "Onde de choc qui repousse violemment tous les ennemis proches.",
+  "spell.donjonmc.rank_c_flame.desc":      "Embrase l'ennemi le plus proche et le fait brûler.",
+  "spell.donjonmc.rank_b_frost.desc":      "Tempête de givre qui blesse et ralentit tous les ennemis alentour.",
+  "spell.donjonmc.rank_a_thunder.desc":    "Foudroie les ennemis les plus proches.",
+  "spell.donjonmc.rank_s_shadow_veil.desc":"Maudit tous les ennemis alentour : Flétrissement, Aveuglement, Lenteur et Surbrillance.",
+  "spell.donjonmc.tank_shield.desc":       "Vous enveloppe d'une protection sacrée.",
+  "spell.donjonmc.assassin_blink.desc":    "Vous téléporte dans le dos de l'ennemi le plus proche, le blesse et l'aveugle.",
+  "spell.donjonmc.mage_arcane_deluge.desc":"Pilonne les ennemis les plus proches de dégâts arcaniques.",
+  "spell.donjonmc.healer_aura.desc":       "Soigne et régénère le lanceur ainsi que les joueurs alliés proches.",
+
   "donjonmc.dungeon.carry_bonus":        "§6[Système] §rBonus carry : §a+50 % XP§r reçu grâce à l'escorte d'un chasseur de rang supérieur.",
   "donjonmc.dungeon.speed_bonus":        "§6[Système] §rBonus de vitesse : §a+%s %% XP§r pour avoir terminé le donjon rapidement !",
   "donjonmc.punishment.cooldown":        "§4[Système] §rVous avez déjà subi votre punition aujourd'hui. Reposez-vous.",

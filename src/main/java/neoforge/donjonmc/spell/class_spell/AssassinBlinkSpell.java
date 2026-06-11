@@ -8,7 +8,10 @@ import io.redspace.ironsspellbooks.api.spells.CastType;
 import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
+import io.redspace.ironsspellbooks.api.util.Utils;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,6 +22,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * Sort de classe Assassin — "Frappe de l'Ombre"
@@ -49,6 +53,15 @@ public class AssassinBlinkSpell extends AbstractSpell {
     @Override public CastType getCastType() { return CastType.INSTANT; }
     @Override public AnimationHolder getCastStartAnimation() { return SpellAnimations.SLASH_ANIMATION; }
     @Override public AnimationHolder getCastFinishAnimation() { return AnimationHolder.pass(); }
+
+    @Override
+    public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
+        return List.of(
+            Component.translatable("spell.donjonmc.assassin_blink.desc"),
+            Component.translatable("ui.irons_spellbooks.damage", Utils.stringTruncation(10f + spellLevel * 5f, 1)),
+            Component.translatable("ui.irons_spellbooks.distance", (int) (15.0 + spellLevel * 2.0))
+        );
+    }
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity,

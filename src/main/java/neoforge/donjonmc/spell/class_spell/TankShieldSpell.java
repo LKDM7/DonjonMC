@@ -8,13 +8,18 @@ import io.redspace.ironsspellbooks.api.spells.CastType;
 import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
+import io.redspace.ironsspellbooks.api.util.Utils;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+
+import java.util.List;
 
 /** Sort de classe Tank — "Rempart du Gardien" (Holy, INSTANT) */
 public class TankShieldSpell extends AbstractSpell {
@@ -37,6 +42,16 @@ public class TankShieldSpell extends AbstractSpell {
     @Override public CastType getCastType() { return CastType.INSTANT; }
     @Override public AnimationHolder getCastStartAnimation() { return SpellAnimations.SELF_CAST_TWO_HANDS; }
     @Override public AnimationHolder getCastFinishAnimation() { return AnimationHolder.pass(); }
+
+    @Override
+    public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
+        return List.of(
+            Component.translatable("spell.donjonmc.tank_shield.desc"),
+            Component.translatable("ui.irons_spellbooks.damage_reduction", (spellLevel + 1) * 20),
+            Component.translatable("ui.irons_spellbooks.absorption", (spellLevel + 2) * 4),
+            Component.translatable("ui.irons_spellbooks.effect_length", Utils.timeFromTicks((5 + spellLevel * 3) * 20, 1))
+        );
+    }
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity,

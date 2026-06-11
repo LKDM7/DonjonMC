@@ -8,7 +8,10 @@ import io.redspace.ironsspellbooks.api.spells.CastType;
 import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
+import io.redspace.ironsspellbooks.api.util.Utils;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,6 +19,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * Sort de classe Mage — "Déluge Arcanique"
@@ -46,6 +50,16 @@ public class MageArcaneDelugeSpell extends AbstractSpell {
     @Override public CastType getCastType() { return CastType.INSTANT; }
     @Override public AnimationHolder getCastStartAnimation() { return SpellAnimations.CAST_T_POSE; }
     @Override public AnimationHolder getCastFinishAnimation() { return AnimationHolder.pass(); }
+
+    @Override
+    public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
+        return List.of(
+            Component.translatable("spell.donjonmc.mage_arcane_deluge.desc"),
+            Component.translatable("ui.irons_spellbooks.damage", Utils.stringTruncation(8f + spellLevel * 4f, 1)),
+            Component.translatable("ui.irons_spellbooks.max_victims", 2 + spellLevel),
+            Component.translatable("ui.irons_spellbooks.distance", 25)
+        );
+    }
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity,
