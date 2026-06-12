@@ -2,6 +2,9 @@ package neoforge.donjonmc.dungeon;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -22,6 +25,9 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.portal.DimensionTransition;
 import neoforge.donjonmc.dungeon.mob.DungeonMob;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import neoforge.donjonmc.Config;
 import neoforge.donjonmc.Donjonmc;
 import neoforge.donjonmc.network.SyncDungeonHudPacket;
 import neoforge.donjonmc.player.ModAttachments;
@@ -91,6 +97,52 @@ public final class DungeonManager {
 
     private void scheduleZoneClear(int instanceId, BlockPos zoneOrigin, long now) {
         pendingClears.add(new ZoneClear(instanceId, zoneOrigin, now + ZONE_CLEAR_DELAY_TICKS));
+        markZonesDirty();
+    }
+
+    // ── Persistance de l'état des zones (voir ZoneClearSavedData) ──────────────
+
+    private ZoneClearSavedData zonesSavedData;
+
+    /** Attaché au démarrage du serveur (après chargement des mondes). */
+    public void attachZonesSavedData(ZoneClearSavedData data) { this.zonesSavedData = data; }
+
+    private void markZonesDirty() {
+        if (zonesSavedData != null) zonesSavedData.setDirty();
+    }
+
+    CompoundTag saveZoneState(CompoundTag tag) {
+        tag.putInt("idCounter", idCounter.get());
+        tag.putIntArray("freeIds", freeIds.stream().mapToInt(Integer::intValue).toArray());
+        ListTag list = new ListTag();
+        for (ZoneClear zc : pendingClears) {
+            CompoundTag t = new CompoundTag();
+            t.putInt("instanceId", zc.instanceId);
+            t.putInt("originX", zc.minX + ZONE_CLEAR_RADIUS);
+            t.putInt("originZ", zc.minZ + ZONE_CLEAR_RADIUS);
+            t.putLong("startTick", zc.startTick);
+            t.putLong("cursor", zc.cursor);
+            list.add(t);
+        }
+        tag.put("pendingClears", list);
+        return tag;
+    }
+
+    void loadZoneState(CompoundTag tag) {
+        idCounter.set(tag.getInt("idCounter"));
+        freeIds.clear();
+        for (int id : tag.getIntArray("freeIds")) freeIds.offer(id);
+        pendingClears.clear();
+        ListTag list = tag.getList("pendingClears", Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag t = list.getCompound(i);
+            ZoneClear zc = new ZoneClear(
+                t.getInt("instanceId"),
+                new BlockPos(t.getInt("originX"), 0, t.getInt("originZ")),
+                t.getLong("startTick"));
+            zc.cursor = t.getLong("cursor");
+            pendingClears.add(zc);
+        }
     }
 
     /** Appelé chaque tick par DungeonEventHandler : vide progressivement les zones en attente. */
@@ -127,6 +179,9 @@ public final class DungeonManager {
                 it.remove();
             }
         }
+
+        // Le curseur a avancé (et/ou des zones ont été libérées) → à sauvegarder.
+        if (budget < ZONE_CLEAR_BUDGET) markZonesDirty();
     }
 
     public void clear() {
@@ -136,6 +191,7 @@ public final class DungeonManager {
         freeIds.clear();
         pendingClears.clear();
         idCounter.set(0);
+        zonesSavedData = null; // ré-attaché par ServerStartedEvent (monde courant)
     }
 
     // ── Portal Spawn ──────────────────────────────────────────────────────────
@@ -176,6 +232,14 @@ public final class DungeonManager {
         portal.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0, 0);
         portal.init(rank);
         level.addFreshEntity(portal);
+
+        // Son de "gate" : ouverture de portail de l'End, audible dans le rayon configuré
+        // (au-delà de 1.0, le volume étend la portée d'environ 16 blocs par unité).
+        if (Config.gateSoundEnabled) {
+            float volume = Config.gateSoundRangeBlocks / 16.0f;
+            level.playSound(null, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
+                SoundEvents.END_PORTAL_SPAWN, SoundSource.AMBIENT, volume, 0.7f);
+        }
 
         Component rankComp = Component.translatable(rank.langKey())
             .withStyle(style -> style.withColor(rankColor(rank)));
@@ -248,6 +312,7 @@ public final class DungeonManager {
 
         // Réutilise une zone libérée si disponible (les blocs y seront réécrits par la génération)
         int id = freeIds.isEmpty() ? idCounter.getAndIncrement() : freeIds.poll();
+        markZonesDirty();
         long startTick = server.overworld().getGameTime();
 
         DungeonInstance instance = new DungeonInstance(
@@ -408,6 +473,7 @@ public final class DungeonManager {
             );
             activeInstances.put(instId, inst);
             idCounter.updateAndGet(cur -> Math.max(cur, instId + 1));
+            markZonesDirty();
             playerToInstance.put(player.getUUID(), instId);
         }
 

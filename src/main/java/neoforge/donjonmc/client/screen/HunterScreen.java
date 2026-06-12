@@ -579,7 +579,7 @@ public class HunterScreen extends Screen {
         long last = ClientPlayerDataCache.lastTrialFailMs;
         if (last <= 0) return 0;
         long elapsed = System.currentTimeMillis() - last;
-        return Math.max(0, ClassTrialHandler.COOLDOWN_MS - elapsed);
+        return Math.max(0, ClassTrialHandler.cooldownMs() - elapsed);
     }
 
     private void renderClassChoice(GuiGraphics g, int mx, int my) {

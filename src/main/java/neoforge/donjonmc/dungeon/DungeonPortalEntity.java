@@ -7,12 +7,15 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import neoforge.donjonmc.Config;
 import neoforge.donjonmc.Donjonmc;
 import neoforge.donjonmc.raid.RaidManager;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -34,16 +37,13 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
     private static final EntityDataAccessor<Boolean>  EXIT_MODE =
         SynchedEntityData.defineId(DungeonPortalEntity.class, EntityDataSerializers.BOOLEAN);
 
-    /** Halo : contour lumineux quand un joueur est à moins de 120 blocs. */
-    private static final double HALO_RANGE = 120.0;
-
-    /** Lifespan in ticks: 30 minutes for portal, 60 seconds for exit. */
+    /** Lifespan in ticks (durées configurables dans donjonmc-common.toml). */
     private int ticksLeft;
     private int instanceId = -1;
 
     public DungeonPortalEntity(EntityType<?> type, Level level) {
         super(type, level);
-        this.ticksLeft = 20 * 60 * 30;
+        this.ticksLeft = 20 * 60 * Config.portalLifetimeMinutes;
         this.setInvulnerable(true);
     }
 
@@ -70,14 +70,14 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
         entityData.set(EXIT_MODE, true);
         entityData.set(KEY_GIVEN, true);
         this.instanceId = instanceId;
-        this.ticksLeft  = 20 * 60 * 5; // 5 minutes to exit
+        this.ticksLeft  = 20 * 60 * Config.exitPortalMinutes;
     }
 
     public void setAsEntranceExit(int instanceId) {
         entityData.set(EXIT_MODE, true);
         entityData.set(KEY_GIVEN, true);
         this.instanceId = instanceId;
-        this.ticksLeft  = 20 * 60 * 120; // 2 hours (durée max du donjon)
+        this.ticksLeft  = 20 * 60 * Config.entranceExitMinutes; // = durée max du donjon
     }
 
     // ── Tick ─────────────────────────────────────────────────────────────────
@@ -89,10 +89,21 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
 
         if (--ticksLeft <= 0) { discard(); return; }
 
+        // Son d'ambiance : whoosh de portail du Nether tant qu'un joueur est proche.
+        int ambientRange = Config.ambientSoundRangeBlocks;
+        if (ambientRange > 0 && tickCount % 80 == 0
+                && level().getNearestPlayer(this, ambientRange) != null) {
+            level().playSound(null, getX(), getY(), getZ(),
+                SoundEvents.PORTAL_AMBIENT, SoundSource.AMBIENT,
+                ambientRange / 16.0f, 0.6f + random.nextFloat() * 0.4f);
+        }
+
         // Halo de perception : même principe que la Perception sur les mobs,
         // mais déclenché par la proximité de n'importe quel joueur (1×/s).
         if (tickCount % 20 == 0) {
-            boolean playerNearby = level().getNearestPlayer(this, HALO_RANGE) != null;
+            int haloRange = Config.haloRangeBlocks;
+            boolean playerNearby = haloRange > 0
+                && level().getNearestPlayer(this, haloRange) != null;
             if (hasGlowingTag() != playerNearby) {
                 setGlowingTag(playerNearby);
             }

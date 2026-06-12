@@ -21,8 +21,10 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import neoforge.donjonmc.Config;
 import neoforge.donjonmc.Donjonmc;
 import neoforge.donjonmc.dungeon.mob.DungeonMob;
 import neoforge.donjonmc.player.ModAttachments;
@@ -32,10 +34,10 @@ public final class DungeonEventHandler {
 
     private DungeonEventHandler() {}
 
-    /** Portal spawn interval: 8–14 minutes. */
-    private static final int PORTAL_INTERVAL_MIN = 20 * 60 * 8;
-    private static final int PORTAL_INTERVAL_MAX = 20 * 60 * 14;
-    private static int nextPortalTick = PORTAL_INTERVAL_MIN;
+    /** Portal spawn interval (minutes configurables dans donjonmc-common.toml). */
+    private static int intervalMinTicks() { return 20 * 60 * Config.spawnIntervalMinMinutes; }
+    private static int intervalMaxTicks() { return 20 * 60 * Config.spawnIntervalMaxMinutes; }
+    private static int nextPortalTick = 20 * 60 * 8;
 
     /**
      * Snapshot of each player's inventory captured at the moment of death (before vanilla
@@ -48,7 +50,14 @@ public final class DungeonEventHandler {
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
         DungeonManager.getInstance().clear();
-        nextPortalTick = PORTAL_INTERVAL_MIN;
+        nextPortalTick = intervalMinTicks();
+    }
+
+    /** Mondes chargés → restaure la file de nettoyage de zones et le compteur d'IDs. */
+    @SubscribeEvent
+    public static void onServerStarted(ServerStartedEvent event) {
+        ZoneClearSavedData data = ZoneClearSavedData.get(event.getServer().overworld());
+        DungeonManager.getInstance().attachZonesSavedData(data);
     }
 
     @SubscribeEvent
@@ -59,8 +68,8 @@ public final class DungeonEventHandler {
 
         if (--nextPortalTick <= 0) {
             DungeonManager.getInstance().trySpawnPortal(sl);
-            nextPortalTick = PORTAL_INTERVAL_MIN
-                + sl.random.nextInt(PORTAL_INTERVAL_MAX - PORTAL_INTERVAL_MIN);
+            nextPortalTick = intervalMinTicks()
+                + sl.random.nextInt(Math.max(1, intervalMaxTicks() - intervalMinTicks()));
         }
 
         // Sync dungeon HUD every second

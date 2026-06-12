@@ -33,6 +33,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import neoforge.donjonmc.Config;
 import neoforge.donjonmc.Donjonmc;
 import neoforge.donjonmc.dungeon.mob.DungeonMobRegistry;
 
@@ -71,7 +72,10 @@ public final class ClassTrialHandler {
         ResourceLocation.fromNamespaceAndPath(Donjonmc.MODID, "class_trial")
     );
 
-    public static final long COOLDOWN_MS = 24L * 60L * 60L * 1000L; // 24h IRL
+    /** Cooldown après échec en ms (heures configurables dans donjonmc-common.toml). */
+    public static long cooldownMs() {
+        return Config.trialCooldownHours * 60L * 60L * 1000L;
+    }
 
     private static final String  TRIAL_TAG        = "donjonmc_trial_owner";
     private static final int     SLOT_SPACING     = 1024;  // espacement entre instances
@@ -271,7 +275,7 @@ public final class ClassTrialHandler {
         long last = data.getLastTrialFailMs();
         if (last <= 0) return 0;
         long elapsed = System.currentTimeMillis() - last;
-        return Math.max(0, COOLDOWN_MS - elapsed);
+        return Math.max(0, cooldownMs() - elapsed);
     }
 
     // ── Événements ───────────────────────────────────────────────────────────
