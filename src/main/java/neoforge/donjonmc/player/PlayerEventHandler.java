@@ -223,16 +223,16 @@ public final class PlayerEventHandler {
 
     /** Minerais précieux qui donnent de l'XP de mod quand ils sont minés, et leur valeur. */
     private static final java.util.Map<Block, Long> ORE_XP = java.util.Map.ofEntries(
-        java.util.Map.entry(Blocks.DIAMOND_ORE,            50L),
-        java.util.Map.entry(Blocks.DEEPSLATE_DIAMOND_ORE,  50L),
-        java.util.Map.entry(Blocks.EMERALD_ORE,            60L),
-        java.util.Map.entry(Blocks.DEEPSLATE_EMERALD_ORE,  60L),
-        java.util.Map.entry(Blocks.ANCIENT_DEBRIS,         75L),
-        java.util.Map.entry(Blocks.GOLD_ORE,               12L),
-        java.util.Map.entry(Blocks.DEEPSLATE_GOLD_ORE,     12L),
-        java.util.Map.entry(Blocks.NETHER_GOLD_ORE,         6L),
-        java.util.Map.entry(Blocks.LAPIS_ORE,               8L),
-        java.util.Map.entry(Blocks.DEEPSLATE_LAPIS_ORE,     8L)
+        java.util.Map.entry(Blocks.DIAMOND_ORE,            33L),
+        java.util.Map.entry(Blocks.DEEPSLATE_DIAMOND_ORE,  33L),
+        java.util.Map.entry(Blocks.EMERALD_ORE,            40L),
+        java.util.Map.entry(Blocks.DEEPSLATE_EMERALD_ORE,  40L),
+        java.util.Map.entry(Blocks.ANCIENT_DEBRIS,         50L),
+        java.util.Map.entry(Blocks.GOLD_ORE,                8L),
+        java.util.Map.entry(Blocks.DEEPSLATE_GOLD_ORE,      8L),
+        java.util.Map.entry(Blocks.NETHER_GOLD_ORE,         4L),
+        java.util.Map.entry(Blocks.LAPIS_ORE,               5L),
+        java.util.Map.entry(Blocks.DEEPSLATE_LAPIS_ORE,     5L)
     );
 
     @SubscribeEvent
@@ -482,11 +482,11 @@ public final class PlayerEventHandler {
         }
 
         // Régénération mana via Iron's Spells 'n Spellbooks MagicData
-        // 1.0 + 0.08×Intel → regen/s (max ~5/s à intel 50) ; ×2 pour le Guérisseur
+        // 0.67 + 0.054×Intel → regen/s (max ~3.4/s à intel 50) ; ×2 pour le Guérisseur
         MagicData magicData = MagicData.getPlayerMagicData(player);
         float maxMana = (float) player.getAttributeValue(AttributeRegistry.MAX_MANA);
         if (magicData.getMana() < maxMana) {
-            float rate = 1.0f + data.getIntelligence() * 0.08f;
+            float rate = 0.67f + data.getIntelligence() * 0.054f;
             if (data.getPlayerClass() == PlayerClass.HEALER) rate *= 2f;
             magicData.addMana(rate);
         }
