@@ -34,6 +34,9 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
     private static final EntityDataAccessor<Boolean>  EXIT_MODE =
         SynchedEntityData.defineId(DungeonPortalEntity.class, EntityDataSerializers.BOOLEAN);
 
+    /** Halo : contour lumineux quand un joueur est à moins de 120 blocs. */
+    private static final double HALO_RANGE = 120.0;
+
     /** Lifespan in ticks: 30 minutes for portal, 60 seconds for exit. */
     private int ticksLeft;
     private int instanceId = -1;
@@ -85,6 +88,15 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
         if (level().isClientSide()) return;
 
         if (--ticksLeft <= 0) { discard(); return; }
+
+        // Halo de perception : même principe que la Perception sur les mobs,
+        // mais déclenché par la proximité de n'importe quel joueur (1×/s).
+        if (tickCount % 20 == 0) {
+            boolean playerNearby = level().getNearestPlayer(this, HALO_RANGE) != null;
+            if (hasGlowingTag() != playerNearby) {
+                setGlowingTag(playerNearby);
+            }
+        }
     }
 
     // ── Right-click interaction ───────────────────────────────────────────────
