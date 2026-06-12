@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.TraceableEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -34,6 +35,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+import neoforge.donjonmc.Config;
 import neoforge.donjonmc.Donjonmc;
 import neoforge.donjonmc.network.SyncPlayerDataPacket;
 import neoforge.donjonmc.spell.SpellUnlockHandler;
@@ -154,6 +156,20 @@ public final class PlayerEventHandler {
         applyClassModifiers(player, data);
     }
 
+    /**
+     * Retrouve le joueur responsable d'un kill. Couvre les cas où la source de dégâts
+     * n'est pas directement le joueur : sorts à projectile ou zone d'effet, invocations
+     * (TraceableEntity → propriétaire), et dégâts indirects type poison/brûlure via le
+     * crédit de kill vanilla (dernier joueur ayant frappé dans les ~5 dernières secondes).
+     */
+    public static ServerPlayer killerPlayer(LivingDeathEvent event) {
+        if (event.getSource().getEntity() instanceof ServerPlayer sp) return sp;
+        if (event.getSource().getDirectEntity() instanceof TraceableEntity te
+                && te.getOwner() instanceof ServerPlayer sp) return sp;
+        if (event.getEntity().getKillCredit() instanceof ServerPlayer sp) return sp;
+        return null;
+    }
+
     @SubscribeEvent
     public static void onMobDeath(LivingDeathEvent event) {
         LivingEntity killed = event.getEntity();
@@ -164,7 +180,8 @@ public final class PlayerEventHandler {
             return;
         }
 
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        ServerPlayer player = killerPlayer(event);
+        if (player == null) return;
 
         // Quête unique : compteur de monstres tués (tout monstre hostile)
         if (killed instanceof Monster) {
@@ -259,7 +276,11 @@ public final class PlayerEventHandler {
     // ── Respec des stats (joueur) ───────────────────────────────────────────────
 
     public static final int  RESPEC_COST_LEVELS = 5;
-    public static final long RESPEC_COOLDOWN_MS = 7L * 24L * 60L * 60L * 1000L;
+
+    /** Cooldown du respec en ms (jours configurables dans donjonmc-common.toml). */
+    public static long respecCooldownMs() {
+        return Config.respecCooldownDays * 24L * 60L * 60L * 1000L;
+    }
 
     /**
      * Tente un respec des stats pour le joueur. Conditions : niveau strictement supérieur au
@@ -277,8 +298,8 @@ public final class PlayerEventHandler {
 
         long now  = System.currentTimeMillis();
         long last = data.getLastRespecMs();
-        if (last > 0L && now - last < RESPEC_COOLDOWN_MS) {
-            long remaining = RESPEC_COOLDOWN_MS - (now - last);
+        if (last > 0L && now - last < respecCooldownMs()) {
+            long remaining = respecCooldownMs() - (now - last);
             long days  = remaining / (24L * 60L * 60L * 1000L);
             long hours = (remaining / (60L * 60L * 1000L)) % 24L;
             p.sendSystemMessage(Component.translatable(

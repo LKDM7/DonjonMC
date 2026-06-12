@@ -84,7 +84,8 @@ public final class DailyQuestEventHandler {
             return;
         }
 
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        ServerPlayer player = neoforge.donjonmc.player.PlayerEventHandler.killerPlayer(event);
+        if (player == null) return;
         if (killed instanceof DungeonMob) return; // handled by DungeonMobKilled hook
         if (!(killed instanceof Monster)) return;
 
