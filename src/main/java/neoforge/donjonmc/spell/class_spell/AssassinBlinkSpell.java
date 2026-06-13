@@ -9,6 +9,7 @@ import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
 import io.redspace.ironsspellbooks.api.util.Utils;
+import io.redspace.ironsspellbooks.damage.DamageSources;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -89,7 +90,7 @@ public class AssassinBlinkSpell extends AbstractSpell {
         entity.teleportTo(target.getX() + Math.sin(angle), target.getY(), target.getZ() - Math.cos(angle));
 
         float damage = 10f + spellLevel * 5f;
-        target.hurt(entity.damageSources().magic(), damage);
+        DamageSources.applyDamage(target, damage, this.getDamageSource(entity));
         target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40 + spellLevel * 20, 0, false, true));
 
         if (level instanceof ServerLevel sl) {

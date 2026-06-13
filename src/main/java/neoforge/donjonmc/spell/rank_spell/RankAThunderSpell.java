@@ -79,6 +79,10 @@ public class RankAThunderSpell extends AbstractSpell {
                 if (bolt != null) {
                     bolt.moveTo(mob.getX(), mob.getY(), mob.getZ());
                     bolt.setVisualOnly(false);
+                    // Crédite le lanceur pour que la mort donne l'XP du mod
+                    if (entity instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        bolt.setCause(sp);
+                    }
                     sl.addFreshEntity(bolt);
                 }
             });

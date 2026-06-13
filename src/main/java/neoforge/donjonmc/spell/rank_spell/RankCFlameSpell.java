@@ -9,6 +9,7 @@ import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
 import io.redspace.ironsspellbooks.api.util.Utils;
+import io.redspace.ironsspellbooks.damage.DamageSources;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -71,7 +72,7 @@ public class RankCFlameSpell extends AbstractSpell {
 
         if (target != null) {
             target.igniteForSeconds(8 + spellLevel * 4);
-            target.hurt(entity.damageSources().onFire(), 10f + spellLevel * 6f);
+            DamageSources.applyDamage(target, 10f + spellLevel * 6f, this.getDamageSource(entity));
             if (level instanceof ServerLevel sl) {
                 sl.sendParticles(ParticleTypes.FLAME,
                     target.getX(), target.getY() + 1, target.getZ(), 20, 0.3, 0.5, 0.3, 0.1);

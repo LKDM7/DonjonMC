@@ -9,6 +9,7 @@ import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
 import io.redspace.ironsspellbooks.api.util.Utils;
+import io.redspace.ironsspellbooks.damage.DamageSources;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -75,7 +76,7 @@ public class MageArcaneDelugeSpell extends AbstractSpell {
             .toList();
 
         for (LivingEntity t : targets) {
-            t.hurt(entity.damageSources().magic(), damage);
+            DamageSources.applyDamage(t, damage, this.getDamageSource(entity));
             if (level instanceof ServerLevel sl) {
                 sl.sendParticles(ParticleTypes.WITCH,
                     t.getX(), t.getY() + 1, t.getZ(), 12, 0.3, 0.4, 0.3, 0.08);

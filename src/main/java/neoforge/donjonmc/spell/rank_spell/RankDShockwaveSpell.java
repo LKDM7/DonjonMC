@@ -9,6 +9,7 @@ import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
 import io.redspace.ironsspellbooks.api.util.Utils;
+import io.redspace.ironsspellbooks.damage.DamageSources;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -78,7 +79,7 @@ public class RankDShockwaveSpell extends AbstractSpell {
 
         level.getEntitiesOfClass(Mob.class, entity.getBoundingBox().inflate(radius))
             .forEach(mob -> {
-                mob.hurt(entity.damageSources().magic(), damage);
+                DamageSources.applyDamage(mob, damage, this.getDamageSource(entity));
                 mob.knockback(2.0 + spellLevel * 0.3,
                     entity.getX() - mob.getX(), entity.getZ() - mob.getZ());
             });

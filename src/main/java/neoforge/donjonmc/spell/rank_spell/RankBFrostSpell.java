@@ -9,6 +9,7 @@ import io.redspace.ironsspellbooks.api.spells.SpellAnimations;
 import io.redspace.ironsspellbooks.api.spells.SpellRarity;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
 import io.redspace.ironsspellbooks.api.util.Utils;
+import io.redspace.ironsspellbooks.damage.DamageSources;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -73,7 +74,7 @@ public class RankBFrostSpell extends AbstractSpell {
 
         level.getEntitiesOfClass(Mob.class, entity.getBoundingBox().inflate(radius))
             .forEach(mob -> {
-                mob.hurt(entity.damageSources().magic(), damage);
+                DamageSources.applyDamage(mob, damage, this.getDamageSource(entity));
                 mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, dur, slowAmp, false, true));
             });
 
