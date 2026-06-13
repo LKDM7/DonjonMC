@@ -33,11 +33,11 @@ public enum DungeonRank {
     /** Weighted random rank — higher ranks rarer. */
     public static DungeonRank random(RandomSource rng) {
         int roll = rng.nextInt(100);
-        if (roll < 2)  return S;
-        if (roll < 10) return A;
-        if (roll < 25) return B;
-        if (roll < 55) return C;
-        return D;
+        if (roll < 2)  return S;  // 2 %
+        if (roll < 7)  return A;  // 5 %
+        if (roll < 17) return B;  // 10 %
+        if (roll < 52) return C;  // 35 %
+        return D;                 // 48 %
     }
 
     public static DungeonRank fromOrdinal(int ord) {
