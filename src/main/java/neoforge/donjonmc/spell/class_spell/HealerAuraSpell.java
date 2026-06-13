@@ -37,11 +37,15 @@ public class HealerAuraSpell extends AbstractSpell {
         .setMinRarity(SpellRarity.RARE)
         .setSchoolResource(HOLY)
         .setMaxLevel(5)
-        .setCooldownSeconds(20)
+        .setCooldownSeconds(30)
         .build();
 
     @Override
     public DefaultConfig getDefaultConfig() { return defaultConfig; }
+
+    // Réservé à l'épreuve de classe : ni loot aléatoire ni fabrication possible.
+    @Override public boolean allowLooting()  { return false; }
+    @Override public boolean allowCrafting() { return false; }
 
     @Override
     public ResourceLocation getSpellResource() {
@@ -56,29 +60,42 @@ public class HealerAuraSpell extends AbstractSpell {
     public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
         return List.of(
             Component.translatable("spell.donjonmc.healer_aura.desc"),
-            Component.translatable("ui.irons_spellbooks.healing", Utils.stringTruncation(4f + spellLevel * 3f, 1)),
-            Component.translatable("ui.irons_spellbooks.radius", (int) (10.0 + spellLevel * 2.0)),
-            Component.translatable("ui.irons_spellbooks.effect_length", Utils.timeFromTicks((4 + spellLevel * 2) * 20, 1))
+            Component.translatable("ui.irons_spellbooks.healing", Utils.stringTruncation(6f + spellLevel * 5f, 1)),
+            Component.translatable("ui.irons_spellbooks.radius", (int) (12.0 + spellLevel * 3.0)),
+            Component.translatable("ui.irons_spellbooks.effect_length", Utils.timeFromTicks((5 + spellLevel * 3) * 20, 1))
         );
+    }
+
+    /** Purge tous les effets néfastes d'une entité. */
+    private static void cleanseHarmful(LivingEntity e) {
+        e.getActiveEffects().stream()
+            .map(MobEffectInstance::getEffect)
+            .filter(h -> !h.value().isBeneficial())
+            .toList()
+            .forEach(e::removeEffect);
     }
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity,
                        CastSource castSource, MagicData playerMagicData) {
-        double radius   = 10.0 + spellLevel * 2.0;
-        float  heal     = 4f + spellLevel * 3f;
-        int    regenDur = (4 + spellLevel * 2) * 20;
+        double radius   = 12.0 + spellLevel * 3.0;
+        float  heal     = 6f + spellLevel * 5f;
+        int    regenDur = (5 + spellLevel * 3) * 20;
 
-        // Soigne et donne Régénération au lanceur
+        // Soigne, purge les malus, Régénération + bouclier d'absorption au lanceur
         entity.heal(heal);
-        entity.addEffect(new MobEffectInstance(MobEffects.REGENERATION, regenDur, spellLevel, false, true));
+        cleanseHarmful(entity);
+        entity.addEffect(new MobEffectInstance(MobEffects.REGENERATION, regenDur, spellLevel + 1, false, true));
+        entity.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,   regenDur, 1,              false, true));
 
-        // Effet sur les joueurs alliés à portée
+        // Même soutien sur les joueurs alliés à portée
         level.getEntitiesOfClass(Player.class, entity.getBoundingBox().inflate(radius),
                 ally -> ally != entity)
             .forEach(ally -> {
                 ally.heal(heal);
-                ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, regenDur, spellLevel, false, true));
+                cleanseHarmful(ally);
+                ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, regenDur, spellLevel + 1, false, true));
+                ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,   regenDur, 1,              false, true));
             });
 
         if (level instanceof ServerLevel sl) {

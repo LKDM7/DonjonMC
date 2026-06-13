@@ -39,6 +39,10 @@ public class TankShieldSpell extends AbstractSpell {
         return ResourceLocation.fromNamespaceAndPath("donjonmc", "tank_shield");
     }
     @Override public DefaultConfig getDefaultConfig() { return defaultConfig; }
+
+    // Réservé à l'épreuve de classe : ni loot aléatoire ni fabrication possible.
+    @Override public boolean allowLooting()  { return false; }
+    @Override public boolean allowCrafting() { return false; }
     @Override public CastType getCastType() { return CastType.INSTANT; }
     @Override public AnimationHolder getCastStartAnimation() { return SpellAnimations.SELF_CAST_TWO_HANDS; }
     @Override public AnimationHolder getCastFinishAnimation() { return AnimationHolder.pass(); }
@@ -47,18 +51,21 @@ public class TankShieldSpell extends AbstractSpell {
     public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
         return List.of(
             Component.translatable("spell.donjonmc.tank_shield.desc"),
-            Component.translatable("ui.irons_spellbooks.damage_reduction", (spellLevel + 1) * 20),
-            Component.translatable("ui.irons_spellbooks.absorption", (spellLevel + 2) * 4),
-            Component.translatable("ui.irons_spellbooks.effect_length", Utils.timeFromTicks((5 + spellLevel * 3) * 20, 1))
+            Component.translatable("ui.irons_spellbooks.damage_reduction", Math.min((spellLevel + 1) * 20, 100)),
+            Component.translatable("ui.irons_spellbooks.absorption", (spellLevel + 3) * 4),
+            Component.translatable("ui.irons_spellbooks.effect_length", Utils.timeFromTicks((8 + spellLevel * 4) * 20, 1))
         );
     }
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity,
                        CastSource castSource, MagicData playerMagicData) {
-        int duration = (5 + spellLevel * 3) * 20;
+        int duration = (8 + spellLevel * 4) * 20;
+        // Mur défensif endgame : Résistance + grosse Absorption + auto-régen + ignifuge.
         entity.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, duration, spellLevel,     false, true));
-        entity.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,        duration, spellLevel + 1, false, true));
+        entity.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,        duration, spellLevel + 2, false, true));
+        entity.addEffect(new MobEffectInstance(MobEffects.REGENERATION,      duration, 1,              false, true));
+        entity.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE,   duration, 0,              false, true));
         if (level instanceof ServerLevel sl) {
             sl.sendParticles(ParticleTypes.TOTEM_OF_UNDYING,
                 entity.getX(), entity.getY() + 1, entity.getZ(), 40, 0.5, 1.0, 0.5, 0.1);

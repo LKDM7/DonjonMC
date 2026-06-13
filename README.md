@@ -12,7 +12,7 @@ Lien de DL direct (toujours à jour) :
 https://github.com/LKDM7/DonjonMC/raw/master/releases/donjonmc-latest.jar
 ```
 
-Version figée : `releases/donjonmc-2.1.9.jar`.
+Version figée : `releases/donjonmc-2.2.0.jar`.
 
 ---
 

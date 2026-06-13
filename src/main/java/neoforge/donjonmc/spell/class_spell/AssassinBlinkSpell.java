@@ -40,11 +40,15 @@ public class AssassinBlinkSpell extends AbstractSpell {
         .setMinRarity(SpellRarity.RARE)
         .setSchoolResource(ENDER)
         .setMaxLevel(5)
-        .setCooldownSeconds(12)
+        .setCooldownSeconds(30)
         .build();
 
     @Override
     public DefaultConfig getDefaultConfig() { return defaultConfig; }
+
+    // Réservé à l'épreuve de classe : ni loot aléatoire ni fabrication possible.
+    @Override public boolean allowLooting()  { return false; }
+    @Override public boolean allowCrafting() { return false; }
 
     @Override
     public ResourceLocation getSpellResource() {
@@ -59,15 +63,15 @@ public class AssassinBlinkSpell extends AbstractSpell {
     public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
         return List.of(
             Component.translatable("spell.donjonmc.assassin_blink.desc"),
-            Component.translatable("ui.irons_spellbooks.damage", Utils.stringTruncation(10f + spellLevel * 5f, 1)),
-            Component.translatable("ui.irons_spellbooks.distance", (int) (15.0 + spellLevel * 2.0))
+            Component.translatable("ui.irons_spellbooks.damage", Utils.stringTruncation(14f + spellLevel * 8f, 1)),
+            Component.translatable("ui.irons_spellbooks.distance", (int) (18.0 + spellLevel * 3.0))
         );
     }
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity,
                        CastSource castSource, MagicData playerMagicData) {
-        double radius = 15.0 + spellLevel * 2.0;
+        double radius = 18.0 + spellLevel * 3.0;
 
         var target = level.getEntitiesOfClass(LivingEntity.class,
                 entity.getBoundingBox().inflate(radius), e -> e instanceof Monster)
@@ -89,9 +93,17 @@ public class AssassinBlinkSpell extends AbstractSpell {
         double angle = target.getYRot() * Math.PI / 180.0;
         entity.teleportTo(target.getX() + Math.sin(angle), target.getY(), target.getZ() - Math.cos(angle));
 
-        float damage = 10f + spellLevel * 5f;
+        float damage = 14f + spellLevel * 8f;
+        // Exécution : +50 % de dégâts si la cible est déjà sous 40 % de PV
+        if (target.getHealth() < target.getMaxHealth() * 0.4f) damage *= 1.5f;
         DamageSources.applyDamage(target, damage, this.getDamageSource(entity));
-        target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40 + spellLevel * 20, 0, false, true));
+        target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60 + spellLevel * 20, 0, false, true));
+        target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,  60 + spellLevel * 20, 1, false, true));
+
+        // Repli de l'assassin : invisibilité + célérité juste après la frappe
+        int escapeDur = 40 + spellLevel * 20;
+        entity.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY,  escapeDur, 0, false, true));
+        entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, escapeDur, 1, false, true));
 
         if (level instanceof ServerLevel sl) {
             sl.sendParticles(ParticleTypes.PORTAL,

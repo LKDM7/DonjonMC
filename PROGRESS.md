@@ -122,3 +122,8 @@ automatiquement en fin de session (plugin cwp-claude-progress).
 ## 2026-06-13 — Buff boss rang D + audit boss (non release)
 - Boss rang D (Giga Goblin) : `BOSS_SCALE[D]` 2.0/2.0 → 2.5/2.3 (PV +25 %, dégâts +15 %). Audit complet des 5 boss fait : PV/dégâts réels = base entité × BOSS_SCALE. Repéré inversion PV au rang A (Igris 240 < Golem B 280, base HP=20 trop basse) et dégâts B/A/S qui one-shot les joueurs du rang.
 - Next : décider d'appliquer le lissage proposé (remonter base HP Igris à 50, aplatir multiplicateurs ATK) puis release.
+
+## 2026-06-13 — Épreuve de classe 4 phases + buff sorts de classe (non release)
+- Épreuve : P1 = 50 gobelins + 1 Giga Gobelin ; nouvelle P2 = donjon rang B (25 mobs ×3.0 PV/×2.5 ATK + Golem ×8.75/×5.5) ; ex-P2 Igris → P3, ex-P3 Ignis → P4. MAJ lang FR/EN (titres/sous-titres phase 4), seuil victoire `>= 4`.
+- Sorts de classe rendus OP : Tank (Abso 32 PV + Régén + ignifuge, 28s), Healer (soin 31 + purge malus + Abso, rayon 27), Mage (54×10 cibles + brûlure + Faiblesse/Lenteur), Assassin (54, exécution ×1.5 <40 % PV, invis+célérité au repli).
+- Next : compiler (`./gradlew build`) pour valider les imports ajoutés, tester équilibrage en jeu, puis release.

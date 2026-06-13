@@ -15,6 +15,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
@@ -37,11 +39,15 @@ public class MageArcaneDelugeSpell extends AbstractSpell {
         .setMinRarity(SpellRarity.UNCOMMON)
         .setSchoolResource(EVOCATION)
         .setMaxLevel(7)
-        .setCooldownSeconds(6)
+        .setCooldownSeconds(30)
         .build();
 
     @Override
     public DefaultConfig getDefaultConfig() { return defaultConfig; }
+
+    // Réservé à l'épreuve de classe : ni loot aléatoire ni fabrication possible.
+    @Override public boolean allowLooting()  { return false; }
+    @Override public boolean allowCrafting() { return false; }
 
     @Override
     public ResourceLocation getSpellResource() {
@@ -56,20 +62,20 @@ public class MageArcaneDelugeSpell extends AbstractSpell {
     public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
         return List.of(
             Component.translatable("spell.donjonmc.mage_arcane_deluge.desc"),
-            Component.translatable("ui.irons_spellbooks.damage", Utils.stringTruncation(8f + spellLevel * 4f, 1)),
-            Component.translatable("ui.irons_spellbooks.max_victims", 2 + spellLevel),
-            Component.translatable("ui.irons_spellbooks.distance", 25)
+            Component.translatable("ui.irons_spellbooks.damage", Utils.stringTruncation(12f + spellLevel * 6f, 1)),
+            Component.translatable("ui.irons_spellbooks.max_victims", 3 + spellLevel),
+            Component.translatable("ui.irons_spellbooks.distance", 30)
         );
     }
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity,
                        CastSource castSource, MagicData playerMagicData) {
-        int maxTargets = 2 + spellLevel;
-        float damage    = 8f + spellLevel * 4f;
+        int maxTargets = 3 + spellLevel;
+        float damage    = 12f + spellLevel * 6f;
 
         var targets = level.getEntitiesOfClass(LivingEntity.class,
-                entity.getBoundingBox().inflate(25.0), e -> e instanceof Monster)
+                entity.getBoundingBox().inflate(30.0), e -> e instanceof Monster)
             .stream()
             .sorted(Comparator.comparingDouble(e -> e.distanceToSqr(entity)))
             .limit(maxTargets)
@@ -77,6 +83,10 @@ public class MageArcaneDelugeSpell extends AbstractSpell {
 
         for (LivingEntity t : targets) {
             DamageSources.applyDamage(t, damage, this.getDamageSource(entity));
+            // Embrasement arcanique + affaiblissement sur chaque cible touchée
+            t.setRemainingFireTicks(100);
+            t.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,         100, 1, false, true));
+            t.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 1, false, true));
             if (level instanceof ServerLevel sl) {
                 sl.sendParticles(ParticleTypes.WITCH,
                     t.getX(), t.getY() + 1, t.getZ(), 12, 0.3, 0.4, 0.3, 0.08);

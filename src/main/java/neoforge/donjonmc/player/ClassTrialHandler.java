@@ -49,12 +49,13 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * Épreuve de classe (niveau 50) — donjon en 3 phases dans la Burning Arena.
+ * Épreuve de classe (niveau 50) — donjon en 4 phases dans la Burning Arena.
  *
  * Déroulé :
- *   Phase 1 : vague de mobs DonjonMC
- *   Phase 2 : vague + Igris
- *   Phase 3 : vague + Ignis (cataclysm:ignis tel quel, fallback Wither Skeleton)
+ *   Phase 1 : vague de gobelins + un Giga Gobelin
+ *   Phase 2 : donjon de rang B — 25 mobs scalés rang B + le Golem (boss rang B)
+ *   Phase 3 : vague + Igris
+ *   Phase 4 : vague + Ignis (cataclysm:ignis tel quel, fallback Wither Skeleton)
  *   Victoire  → classe CHOISIE appliquée, sort donné, retour overworld
  *   Mort/déco → échec, cooldown 24h IRL, retour overworld
  *
@@ -85,6 +86,12 @@ public final class ClassTrialHandler {
     private static final int     PHASE_DELAY_TICKS  = 600; // 30 s de préparation avant chaque phase
     private static final int     RETURN_DELAY_TICKS = 200; // 10 s avant le TP retour en fin d'épreuve
     private static final String  IGNIS_ID         = "cataclysm:ignis";
+
+    // Multiplicateurs rang B (alignés sur DungeonSpawnManager) pour la phase 2.
+    private static final double  RANKB_MOB_HP     = 3.0;
+    private static final double  RANKB_MOB_ATK    = 2.5;
+    private static final double  RANKB_BOSS_HP    = 8.75;
+    private static final double  RANKB_BOSS_ATK   = 5.5;
 
     /**
      * L'arène complète de Cataclysm fait 85×82×85, assemblée à partir de
@@ -172,16 +179,24 @@ public final class ClassTrialHandler {
         List<WaveEntry> wave = new ArrayList<>();
         switch (phase) {
             case 1 -> {
-                wave.add(new WaveEntry(DungeonMobRegistry.GOBLIN::get,        10));
+                wave.add(new WaveEntry(DungeonMobRegistry.GOBLIN::get,        50));
                 wave.add(new WaveEntry(DungeonMobRegistry.HOBGOBLIN_CLUB::get, 4));
                 wave.add(new WaveEntry(DungeonMobRegistry.SKULL::get,          6));
+                wave.add(new WaveEntry(DungeonMobRegistry.GIGA_GOBLIN::get,    1));
             }
             case 2 -> {
-                wave.add(new WaveEntry(DungeonMobRegistry.UNDEAD::get,         6));
-                wave.add(new WaveEntry(DungeonMobRegistry.SHADOW_SOLDIER::get, 5));
-                // + Igris, géré à part dans startPhase()
+                // Donjon de rang B : 25 mobs scalés rang B (cf. scaleStats) + Golem.
+                wave.add(new WaveEntry(DungeonMobRegistry.ORC::get,            10));
+                wave.add(new WaveEntry(DungeonMobRegistry.HOBGOBLIN_CLUB::get,  8));
+                wave.add(new WaveEntry(DungeonMobRegistry.HOBGOBLIN_BOMBER::get,7));
+                // + Golem (BOSS_GOLEM), géré à part dans startPhase()
             }
             case 3 -> {
+                wave.add(new WaveEntry(DungeonMobRegistry.UNDEAD::get,         9));
+                wave.add(new WaveEntry(DungeonMobRegistry.SHADOW_SOLDIER::get, 8));
+                // + Igris, géré à part dans startPhase()
+            }
+            case 4 -> {
                 wave.add(new WaveEntry(DungeonMobRegistry.DEMON_GUARD::get,    3));
                 wave.add(new WaveEntry(DungeonMobRegistry.WILD_DEMON::get,     2));
                 // + Ignis, géré à part dans startPhase()
@@ -386,7 +401,7 @@ public final class ClassTrialHandler {
         ServerPlayer player = level.getServer().getPlayerList().getPlayer(session.playerId);
         if (player == null) return true; // logout géré par onLogout
 
-        if (session.phase >= 3) {
+        if (session.phase >= 4) {
             completeTrial(player, session);
         } else {
             schedulePhase(player, session, session.phase + 1);
@@ -405,7 +420,7 @@ public final class ClassTrialHandler {
             Component.translatable("donjonmc.trial.phase.sub." + phase)));
         player.sendSystemMessage(Component.translatable("donjonmc.trial.phase.sub." + phase));
         player.playNotifySound(
-            phase == 3 ? SoundEvents.ENDER_DRAGON_GROWL : SoundEvents.WITHER_SPAWN,
+            phase == 4 ? SoundEvents.ENDER_DRAGON_GROWL : SoundEvents.WITHER_SPAWN,
             SoundSource.HOSTILE, 0.7f, 1f);
 
         RandomSource random = level.getRandom();
@@ -414,19 +429,41 @@ public final class ClassTrialHandler {
                 Mob mob = entry.type().get().create(level);
                 if (mob == null) continue;
                 placeAroundCenter(mob, session, 6 + random.nextInt(6), random);
+                if (phase == 2) scaleStats(mob, RANKB_MOB_HP, RANKB_MOB_ATK); // donjon rang B
                 tagAndSpawn(level, player, session, mob);
             }
         }
 
-        if (phase == 2) {
-            Mob igris = DungeonMobRegistry.IGRIS.get().create(level);
-            if (igris != null) {
-                placeAroundCenter(igris, session, 10, random);
-                tagAndSpawn(level, player, session, igris);
+        switch (phase) {
+            case 2 -> {
+                // Boss du donjon de rang B : le Golem, scalé comme un boss rang B.
+                Mob golem = DungeonMobRegistry.BOSS_GOLEM.get().create(level);
+                if (golem != null) {
+                    placeAroundCenter(golem, session, 10, random);
+                    scaleStats(golem, RANKB_BOSS_HP, RANKB_BOSS_ATK);
+                    tagAndSpawn(level, player, session, golem);
+                }
             }
-        } else if (phase == 3) {
-            spawnFinalBoss(level, player, session, random);
+            case 3 -> {
+                Mob igris = DungeonMobRegistry.IGRIS.get().create(level);
+                if (igris != null) {
+                    placeAroundCenter(igris, session, 10, random);
+                    tagAndSpawn(level, player, session, igris);
+                }
+            }
+            case 4 -> spawnFinalBoss(level, player, session, random);
         }
+    }
+
+    /** Multiplie PV (et resoigne) + dégâts d'un mob ; valeurs rang B alignées sur DungeonSpawnManager. */
+    private static void scaleStats(Mob mob, double hpMult, double atkMult) {
+        var hp = mob.getAttribute(Attributes.MAX_HEALTH);
+        if (hp != null) {
+            hp.setBaseValue(hp.getBaseValue() * hpMult);
+            mob.setHealth(mob.getMaxHealth());
+        }
+        var atk = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+        if (atk != null) atk.setBaseValue(atk.getBaseValue() * atkMult);
     }
 
     /** Ignis tel quel si Cataclysm est présent, sinon le Gardien Wither Skeleton. */
