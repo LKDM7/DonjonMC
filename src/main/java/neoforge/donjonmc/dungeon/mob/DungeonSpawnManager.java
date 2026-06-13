@@ -30,9 +30,9 @@ public final class DungeonSpawnManager {
     );
 
     private static final Map<DungeonRank, RankScale> BOSS_SCALE = Map.of(
-        DungeonRank.D, new RankScale(2.0,  2.0,  1, 1),
+        DungeonRank.D, new RankScale(2.5,  2.3,  1, 1),
         DungeonRank.C, new RankScale(4.0,  3.0,  1, 1),
-        DungeonRank.B, new RankScale(7.0,  5.0,  1, 1),
+        DungeonRank.B, new RankScale(8.75, 5.5,  1, 1),
         DungeonRank.A, new RankScale(12.0, 8.0,  1, 1),
         DungeonRank.S, new RankScale(20.0, 14.0, 1, 1)
     );
