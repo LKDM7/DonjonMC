@@ -223,16 +223,16 @@ public final class PlayerEventHandler {
 
     /** Minerais précieux qui donnent de l'XP de mod quand ils sont minés, et leur valeur. */
     private static final java.util.Map<Block, Long> ORE_XP = java.util.Map.ofEntries(
-        java.util.Map.entry(Blocks.DIAMOND_ORE,            33L),
-        java.util.Map.entry(Blocks.DEEPSLATE_DIAMOND_ORE,  33L),
-        java.util.Map.entry(Blocks.EMERALD_ORE,            40L),
-        java.util.Map.entry(Blocks.DEEPSLATE_EMERALD_ORE,  40L),
-        java.util.Map.entry(Blocks.ANCIENT_DEBRIS,         50L),
-        java.util.Map.entry(Blocks.GOLD_ORE,                8L),
-        java.util.Map.entry(Blocks.DEEPSLATE_GOLD_ORE,      8L),
-        java.util.Map.entry(Blocks.NETHER_GOLD_ORE,         4L),
-        java.util.Map.entry(Blocks.LAPIS_ORE,               5L),
-        java.util.Map.entry(Blocks.DEEPSLATE_LAPIS_ORE,     5L)
+        java.util.Map.entry(Blocks.DIAMOND_ORE,            25L),
+        java.util.Map.entry(Blocks.DEEPSLATE_DIAMOND_ORE,  25L),
+        java.util.Map.entry(Blocks.EMERALD_ORE,            30L),
+        java.util.Map.entry(Blocks.DEEPSLATE_EMERALD_ORE,  30L),
+        java.util.Map.entry(Blocks.ANCIENT_DEBRIS,         38L),
+        java.util.Map.entry(Blocks.GOLD_ORE,                6L),
+        java.util.Map.entry(Blocks.DEEPSLATE_GOLD_ORE,      6L),
+        java.util.Map.entry(Blocks.NETHER_GOLD_ORE,         3L),
+        java.util.Map.entry(Blocks.LAPIS_ORE,               4L),
+        java.util.Map.entry(Blocks.DEEPSLATE_LAPIS_ORE,     4L)
     );
 
     @SubscribeEvent
