@@ -52,6 +52,11 @@ public class Config {
         .comment("Rayon (en blocs) du son d'ambiance joué en continu près d'un portail. 0 = désactivé.")
         .defineInRange("portals.ambientSoundRangeBlocks", 25, 0, 64);
 
+    private static final ModConfigSpec.IntValue FAKE_DUNGEON_CHANCE_PERCENT = BUILDER
+        .comment("Chance (en %) qu'un portail de rang C soit un 'double donjon' : annoncé C,",
+                 "mais rang B ou A une fois à l'intérieur. 0 = désactivé.")
+        .defineInRange("portals.fakeDungeonChancePercent", 15, 0, 100);
+
     // ── Cooldowns ────────────────────────────────────────────────────────────
 
     private static final ModConfigSpec.IntValue RESPEC_COOLDOWN_DAYS = BUILDER
@@ -75,6 +80,7 @@ public class Config {
     public static boolean gateSoundEnabled       = true;
     public static int gateSoundRangeBlocks       = 120;
     public static int ambientSoundRangeBlocks    = 25;
+    public static int fakeDungeonChancePercent   = 15;
     public static int respecCooldownDays         = 7;
     public static int trialCooldownHours         = 24;
 
@@ -91,6 +97,7 @@ public class Config {
         gateSoundEnabled        = GATE_SOUND_ENABLED.get();
         gateSoundRangeBlocks    = GATE_SOUND_RANGE_BLOCKS.get();
         ambientSoundRangeBlocks = AMBIENT_SOUND_RANGE_BLOCKS.get();
+        fakeDungeonChancePercent = FAKE_DUNGEON_CHANCE_PERCENT.get();
         respecCooldownDays      = RESPEC_COOLDOWN_DAYS.get();
         trialCooldownHours      = TRIAL_COOLDOWN_HOURS.get();
     }

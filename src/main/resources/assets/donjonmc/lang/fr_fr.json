@@ -179,6 +179,9 @@
   "donjonmc.dungeon.activate.not_ready":    "§c[Système] §rLes joueurs suivants sont trop loin de la porte : §e%s§r.",
   "donjonmc.dungeon.error.dimension":       "§c[Système] §rErreur : dimension de donjon non chargée.",
   "donjonmc.dungeon.entered":               "§5[Système] §rEntrée dans le donjon §e%s§r — §d%s§r. Bonne chance.",
+  "donjonmc.dungeon.trap.title":            "DOUBLE DONJON",
+  "donjonmc.dungeon.trap.sub":              "Ce n'était pas un donjon de rang C... C'est un donjon de rang %s !",
+  "donjonmc.dungeon.trap.chat":             "§4[Système] §rLes informations de la porte étaient fausses. Rang réel : %s§r. Survivez.",
 
   "donjonmc.dungeon.theme.goblins":  "Donjon des Gobelins",
   "donjonmc.dungeon.theme.goblin":   "Repaire des Gobelins",

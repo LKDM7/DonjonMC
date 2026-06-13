@@ -1,8 +1,12 @@
 package neoforge.donjonmc.dungeon;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.ClickEvent;
@@ -231,6 +235,15 @@ public final class DungeonManager {
         DungeonPortalEntity portal = new DungeonPortalEntity(Donjonmc.PORTAL_ENTITY.get(), level);
         portal.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0, 0);
         portal.init(rank);
+
+        // Double donjon (Solo Leveling) : un portail C peut cacher un donjon B ou A.
+        // Tout (annonce chat, apparence, conditions d'entrée) reste celui d'un C ;
+        // le vrai rang n'est révélé qu'une fois le groupe téléporté à l'intérieur.
+        if (rank == DungeonRank.C
+                && level.random.nextInt(100) < Config.fakeDungeonChancePercent) {
+            portal.setRealRank(level.random.nextInt(3) < 2 ? DungeonRank.B : DungeonRank.A);
+        }
+
         level.addFreshEntity(portal);
 
         // Son de "gate" : ouverture de portail de l'End, audible dans le rayon configuré
@@ -292,14 +305,37 @@ public final class DungeonManager {
         }
 
         BlockPos portalPos = portal.blockPosition();
-        createInstance(leader.server, group, rank, new HashSet<>(group.getMembers()), portalPos);
+        // Double donjon : les conditions d'entrée ci-dessus utilisent le rang affiché,
+        // mais l'instance est générée au rang réel (révélé aux joueurs après le TP).
+        DungeonRank realRank = portal.getRealRank();
+        createInstance(leader.server, group, realRank, rank, new HashSet<>(group.getMembers()), portalPos);
+        if (realRank != rank) {
+            revealTrap(members, realRank);
+        }
         portal.discard();
+    }
+
+    /** Annonce dramatique du double donjon aux membres déjà téléportés à l'intérieur. */
+    private void revealTrap(List<ServerPlayer> members, DungeonRank realRank) {
+        Component rankComp = Component.translatable(realRank.langKey())
+            .withStyle(style -> style.withColor(rankColor(realRank)));
+        for (ServerPlayer sp : members) {
+            sp.connection.send(new ClientboundSetTitlesAnimationPacket(10, 70, 20));
+            sp.connection.send(new ClientboundSetTitleTextPacket(
+                Component.translatable("donjonmc.dungeon.trap.title")
+                    .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)));
+            sp.connection.send(new ClientboundSetSubtitleTextPacket(
+                Component.translatable("donjonmc.dungeon.trap.sub", rankComp)));
+            sp.sendSystemMessage(Component.translatable("donjonmc.dungeon.trap.chat", rankComp));
+            sp.playNotifySound(SoundEvents.ENDER_DRAGON_GROWL, SoundSource.HOSTILE, 0.8f, 0.7f);
+        }
     }
 
     // ── Instance Management ───────────────────────────────────────────────────
 
     private void createInstance(MinecraftServer server, RaidGroup group,
-                                DungeonRank rank, Set<UUID> memberIds, BlockPos overworldPos) {
+                                DungeonRank rank, DungeonRank announcedRank,
+                                Set<UUID> memberIds, BlockPos overworldPos) {
 
         ServerLevel dungeonLevel = server.getLevel(DUNGEON_DIMENSION);
         if (dungeonLevel == null) {
@@ -344,7 +380,7 @@ public final class DungeonManager {
             saveDungeonData(sp, instance, entranceSpawn, overworldPos);
             teleportToWithEffect(sp, dungeonLevel, entranceSpawn);
             sp.sendSystemMessage(Component.translatable("donjonmc.dungeon.entered",
-                Component.translatable(rank.langKey())));
+                Component.translatable(announcedRank.langKey())));
         }
 
         // Boss bar

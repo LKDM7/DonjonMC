@@ -41,6 +41,13 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
     private int ticksLeft;
     private int instanceId = -1;
 
+    /**
+     * Rang réel du donjon pour les « doubles donjons » (affiché C, mais B/A à l'intérieur).
+     * -1 = identique au rang affiché. Champ serveur uniquement, jamais synchronisé au
+     * client : le piège ne doit pas être détectable avant d'entrer.
+     */
+    private int realRankOrd = -1;
+
     public DungeonPortalEntity(EntityType<?> type, Level level) {
         super(type, level);
         this.ticksLeft = 20 * 60 * Config.portalLifetimeMinutes;
@@ -59,6 +66,13 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
     public DungeonRank getRank()    { return DungeonRank.fromOrdinal(entityData.get(RANK_ORD)); }
     public boolean isKeyGiven()     { return entityData.get(KEY_GIVEN); }
     public boolean isExitPortal()   { return entityData.get(EXIT_MODE); }
+
+    /** Rang réel du donjon (différent du rang affiché pour un double donjon). */
+    public DungeonRank getRealRank() {
+        return realRankOrd >= 0 ? DungeonRank.fromOrdinal(realRankOrd) : getRank();
+    }
+
+    public void setRealRank(DungeonRank rank) { this.realRankOrd = rank.ordinal(); }
 
     public void init(DungeonRank rank) {
         entityData.set(RANK_ORD, rank.ordinal());
@@ -144,6 +158,7 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
         entityData.set(EXIT_MODE, tag.getBoolean("exitMode"));
         ticksLeft  = tag.getInt("ticksLeft");
         instanceId = tag.getInt("instanceId");
+        realRankOrd = tag.contains("realRank") ? tag.getInt("realRank") : -1;
     }
 
     @Override
@@ -153,6 +168,7 @@ public class DungeonPortalEntity extends Entity implements GeoEntity {
         tag.putBoolean("exitMode", entityData.get(EXIT_MODE));
         tag.putInt("ticksLeft",  ticksLeft);
         tag.putInt("instanceId", instanceId);
+        tag.putInt("realRank",   realRankOrd);
     }
 
     @Override public boolean isPickable() { return true; }

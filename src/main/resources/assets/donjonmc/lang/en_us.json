@@ -181,6 +181,9 @@
   "donjonmc.dungeon.activate.not_ready":    "§c[System] §rThe following players are too far from the gate: §e%s§r.",
   "donjonmc.dungeon.error.dimension":       "§c[System] §rError: dungeon dimension not loaded.",
   "donjonmc.dungeon.entered":               "§5[System] §rEntering §e%s§r dungeon — §d%s§r. Good luck.",
+  "donjonmc.dungeon.trap.title":            "DOUBLE DUNGEON",
+  "donjonmc.dungeon.trap.sub":              "This was not a C-rank dungeon... This is a %s-rank dungeon!",
+  "donjonmc.dungeon.trap.chat":             "§4[System] §rThe gate's information was false. True rank: %s§r. Survive.",
 
   "donjonmc.dungeon.theme.goblins":  "Goblin Dungeon",
   "donjonmc.dungeon.theme.goblin":   "Goblin Lair",
