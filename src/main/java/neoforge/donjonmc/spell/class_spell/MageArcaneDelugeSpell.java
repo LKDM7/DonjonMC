@@ -27,19 +27,19 @@ import java.util.List;
 /**
  * Sort de classe Mage — "Déluge Arcanique"
  * Dégâts magiques sur (2+niveau) ennemis les plus proches (<25 blocs).
- * Classe: Mage | School: Evocation
+ * Classe: Mage | School: Ender
  */
 public class MageArcaneDelugeSpell extends AbstractSpell {
 
-    private static final ResourceLocation EVOCATION = ResourceLocation.fromNamespaceAndPath("irons_spellbooks", "evocation");
+    private static final ResourceLocation ENDER = ResourceLocation.fromNamespaceAndPath("irons_spellbooks", "ender");
 
     { this.baseManaCost = 55; this.manaCostPerLevel = 8; }
 
     private final DefaultConfig defaultConfig = new DefaultConfig()
         .setMinRarity(SpellRarity.UNCOMMON)
-        .setSchoolResource(EVOCATION)
+        .setSchoolResource(ENDER)
         .setMaxLevel(7)
-        .setCooldownSeconds(30)
+        .setCooldownSeconds(31)
         .build();
 
     @Override
