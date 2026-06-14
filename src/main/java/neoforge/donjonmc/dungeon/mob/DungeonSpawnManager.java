@@ -25,7 +25,7 @@ public final class DungeonSpawnManager {
         DungeonRank.D, new RankScale(1.0,  1.0,  1, 2),
         DungeonRank.C, new RankScale(1.8,  1.5,  1, 2),
         DungeonRank.B, new RankScale(3.0,  2.5,  2, 3),
-        DungeonRank.A, new RankScale(5.0,  4.0,  2, 3),
+        DungeonRank.A, new RankScale(5.0,  4.6,  2, 3),
         DungeonRank.S, new RankScale(8.0,  6.0,  2, 4)
     );
 
@@ -33,7 +33,7 @@ public final class DungeonSpawnManager {
         DungeonRank.D, new RankScale(2.5,  2.3,  1, 1),
         DungeonRank.C, new RankScale(4.0,  3.0,  1, 1),
         DungeonRank.B, new RankScale(8.75, 5.5,  1, 1),
-        DungeonRank.A, new RankScale(12.0, 8.0,  1, 1),
+        DungeonRank.A, new RankScale(14.4, 8.0,  1, 1),
         DungeonRank.S, new RankScale(20.0, 14.0, 1, 1)
     );
 

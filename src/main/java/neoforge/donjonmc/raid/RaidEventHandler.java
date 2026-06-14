@@ -14,6 +14,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.core.Holder;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -103,6 +104,31 @@ public final class RaidEventHandler {
                     magicData.addMana(1.0f);
                 }
             }
+        }
+    }
+
+    // ── Friendly fire: pas de dégâts entre membres d'un même groupe ───────────
+
+    /**
+     * Annule tout dégât infligé par un membre du raid à un autre membre du même
+     * groupe — coup d'épée, projectile ou sort offensif. Les soins, régénérations
+     * et buffs ne passent pas par cet event (aucun dégât), ils restent donc actifs
+     * sur les alliés. L'auto-dégât (AoE sur soi-même) reste autorisé.
+     */
+    @SubscribeEvent
+    public static void onRaidFriendlyFire(LivingIncomingDamageEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+
+        // getEntity() remonte au lanceur/propriétaire (caster du sort, tireur du
+        // projectile), pas au projectile lui-même.
+        if (!(event.getSource().getEntity() instanceof Player attacker)) return;
+        if (victim.getUUID().equals(attacker.getUUID())) return; // auto-dégât permis
+
+        RaidGroup group = RaidManager.getInstance().getGroup(victim.getUUID()).orElse(null);
+        if (group == null) return;
+
+        if (group.contains(attacker.getUUID())) {
+            event.setCanceled(true);
         }
     }
 
