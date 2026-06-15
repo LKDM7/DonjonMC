@@ -347,8 +347,9 @@ public final class DailyQuestManager {
                 data = updateNightState(player, data, dayT, now);
             }
 
-            // Survival minutes
-            if (now % 20 == 0 && hasIncompleteQuestOfType(data, QuestType.SURVIVE_MINUTES)) {
+            // Survival minutes — le handler externe throttle déjà à 1×/s,
+            // ne pas re-gater sur now%20 (getGameTime désaligné du tickCount).
+            if (hasIncompleteQuestOfType(data, QuestType.SURVIVE_MINUTES)) {
                 checkSurvivalMinutes(player, data, now);
             }
         }
@@ -402,7 +403,8 @@ public final class DailyQuestManager {
                 player.setData(ModAttachments.DAILY_QUEST, data);
                 syncToPlayer(player, data);
             }
-            break;
+            // Pas de break : 28 (normale) et 38 (difficile) peuvent coexister,
+            // elles partagent le même survivalStartTick.
         }
     }
 

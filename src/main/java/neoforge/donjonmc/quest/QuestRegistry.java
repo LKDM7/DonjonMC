@@ -13,7 +13,7 @@ public final class QuestRegistry {
 
     private QuestRegistry() {}
 
-    // 44 quêtes : 15 faciles (0-14), 20 normales (15-34), 9 difficiles (35-43)
+    // 52 quêtes : 18 faciles (0-14, 44-46), 23 normales (15-34, 47-49), 11 difficiles (35-43, 50-51)
     public static final List<QuestDef> ALL = List.of(
         // ── FACILE ──────────────────────────────────────────────────────────────
         new QuestDef( 0, "donjonmc.quest.0",  KILL_MOB,              15,    0, "any",      EASY),
@@ -61,10 +61,19 @@ public final class QuestRegistry {
         new QuestDef(40, "donjonmc.quest.40", KILL_STREAK,           40,    0, "any",      HARD),
         new QuestDef(41, "donjonmc.quest.41", MINE_ORE,               5,    0, "diamond",  HARD),
         new QuestDef(42, "donjonmc.quest.42", COMPLETE_DUNGEON_TIMED, 1, 1200, "any",      HARD),
-        new QuestDef(43, "donjonmc.quest.43", LEVEL_UP,               1,    0, "any",      HARD)
+        new QuestDef(43, "donjonmc.quest.43", LEVEL_UP,               1,    0, "any",      HARD),
+        // ── AJOUTS ───────────────────────────────────────────────────────────────
+        new QuestDef(44, "donjonmc.quest.44", KILL_MOB,               3,    0, "enderman", EASY),
+        new QuestDef(45, "donjonmc.quest.45", MINE_STONE,           128,    0, "any",      EASY),
+        new QuestDef(46, "donjonmc.quest.46", BREED_ANIMAL,           2,    0, "any",      EASY),
+        new QuestDef(47, "donjonmc.quest.47", TRADE_VILLAGER,         5,    0, "any",      NORMAL),
+        new QuestDef(48, "donjonmc.quest.48", FISH,                  20,    0, "any",      NORMAL),
+        new QuestDef(49, "donjonmc.quest.49", WALK_BLOCKS,         2000,    0, "any",      NORMAL),
+        new QuestDef(50, "donjonmc.quest.50", KILL_BAREHANDED,       25,    0, "any",      HARD),
+        new QuestDef(51, "donjonmc.quest.51", MINE_STONE,           512,    0, "any",      HARD)
     );
 
-    private static final QuestDef[] BY_ID = new QuestDef[44];
+    private static final QuestDef[] BY_ID = new QuestDef[52];
     static {
         for (QuestDef q : ALL) BY_ID[q.id()] = q;
     }

@@ -17,8 +17,11 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.living.LivingHealEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.brewing.PlayerBrewedPotionEvent;
+import net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent;
 import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -36,6 +39,10 @@ public final class DailyQuestEventHandler {
     private static final Set<String> IRON_ORES    = Set.of("iron_ore", "deepslate_iron_ore");
     private static final Set<String> GOLD_ORES    = Set.of("gold_ore", "deepslate_gold_ore", "nether_gold_ore");
     private static final Set<String> DIAMOND_ORES = Set.of("diamond_ore", "deepslate_diamond_ore");
+    private static final Set<String> STONE_BLOCKS = Set.of(
+        "stone", "cobblestone", "deepslate", "cobbled_deepslate", "granite", "diorite",
+        "andesite", "tuff", "calcite", "dripstone_block", "blackstone", "basalt",
+        "netherrack", "end_stone");
 
     // ── Server tick ───────────────────────────────────────────────────────────
 
@@ -185,6 +192,11 @@ public final class DailyQuestEventHandler {
             else                                      oreFilter = "other";
             // Single call: matchesFilter("any", oreFilter)=true, matchesFilter("iron", "iron")=true, etc.
             mgr.onProgress(player, QuestType.MINE_ORE, 1, oreFilter);
+            return;
+        }
+
+        if (STONE_BLOCKS.contains(blockId)) {
+            mgr.onProgress(player, QuestType.MINE_STONE, 1, "any");
         }
     }
 
@@ -223,8 +235,39 @@ public final class DailyQuestEventHandler {
                           || itemId.startsWith("diamond_") || itemId.startsWith("netherite_");
         if (isIronPlus) mgr.onProgress(player, QuestType.CRAFT_ITEM, 1, "iron_plus");
 
-        boolean isPotion = result.is(Items.POTION) || result.is(Items.SPLASH_POTION)
-                        || result.is(Items.LINGERING_POTION);
-        if (isPotion) mgr.onProgress(player, QuestType.CRAFT_ITEM, 1, "potion");
+        // Note : les potions ne passent PAS par ItemCraftedEvent (elles sont
+        // brassées à l'alambic) → gérées dans onPotionBrewed ci-dessous.
+    }
+
+    // ── Brassage de potions (alambic) ─────────────────────────────────────────
+    // Les potions ne sont pas « craftées » mais brassées : ItemCraftedEvent ne
+    // se déclenche jamais pour elles. PlayerBrewedPotionEvent est l'event correct.
+
+    @SubscribeEvent
+    public static void onPotionBrewed(PlayerBrewedPotionEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        ItemStack stack = event.getStack();
+        boolean isPotion = stack.is(Items.POTION) || stack.is(Items.SPLASH_POTION)
+                        || stack.is(Items.LINGERING_POTION);
+        if (!isPotion) return;
+        DailyQuestManager.getInstance().onProgress(player, QuestType.CRAFT_ITEM, 1, "potion");
+    }
+
+    // ── Troc avec un villageois ────────────────────────────────────────────────
+
+    @SubscribeEvent
+    public static void onVillagerTrade(TradeWithVillagerEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        DailyQuestManager.getInstance().onProgress(player, QuestType.TRADE_VILLAGER, 1, "any");
+    }
+
+    // ── Élevage d'animaux ──────────────────────────────────────────────────────
+    // getCausedByPlayer() = le joueur qui a nourri les deux parents (peut être null
+    // pour une reproduction naturelle, qu'on ignore).
+
+    @SubscribeEvent
+    public static void onAnimalBred(BabyEntitySpawnEvent event) {
+        if (!(event.getCausedByPlayer() instanceof ServerPlayer player)) return;
+        DailyQuestManager.getInstance().onProgress(player, QuestType.BREED_ANIMAL, 1, "any");
     }
 }
