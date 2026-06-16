@@ -7,6 +7,9 @@ public enum StatType {
     INTELLIGENCE("Intelligence"),
     PERCEPTION  ("Perception");
 
+    /** Valeur maximale qu'une stat peut atteindre (alignée sur la jauge du HunterScreen). */
+    public static final int MAX = 60;
+
     public final String displayName;
 
     StatType(String displayName) {

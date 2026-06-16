@@ -333,16 +333,19 @@ public class HunterScreen extends Screen {
             int statVal = ClientPlayerDataCache.getStat(stat);
             g.drawString(this.font, String.valueOf(statVal), left + 130, ry, C_GOLD);
 
-            // Mini-jauge (0..50) à droite de la valeur
+            boolean atMax   = statVal >= StatType.MAX;
+            boolean canPlus = sp > 0 && !atMax;
+
+            // Mini-jauge (0..MAX) à droite de la valeur
             int gx = left + 170;
             int gw = left + W - 14 - gx;
-            if (sp > 0) gw -= 24; // place pour le bouton +
+            if (canPlus || atMax) gw -= 24; // place pour le bouton + ou le label MAX
             g.fill(gx, ry + 2, gx + gw, ry + 6, C_XP_BG);
-            int gfill = (int) (gw * Math.min(statVal, 50) / 50.0);
+            int gfill = (int) (gw * Math.min(statVal, StatType.MAX) / (double) StatType.MAX);
             if (gfill > 0) g.fillGradient(gx, ry + 2, gx + gfill, ry + 6, C_XP_FG2, C_XP_FG);
             border(g, gx, ry + 2, gw, 4, C_BORDER_SOFT);
 
-            if (sp > 0) {
+            if (canPlus) {
                 int bx  = left + 148;
                 int by  = ry - 1;
                 boolean hov = mx >= bx && mx < bx + 14 && my >= by && my < by + 11;
@@ -350,6 +353,8 @@ public class HunterScreen extends Screen {
                 g.fill(bx, by, bx + 14, by + 1, 0x8053E0FF);
                 border(g, bx, by, 14, 11, (C_BORDER & 0x00FFFFFF) | 0x90000000);
                 g.drawCenteredString(this.font, "+", bx + 7, by + 1, 0xFFFFFFFF);
+            } else if (atMax) {
+                g.drawString(this.font, "MAX", gx + gw + 6, ry, C_GOLD);
             }
         }
 
@@ -868,6 +873,7 @@ public class HunterScreen extends Screen {
             int btnW = W - 24;
             if (ClientPlayerDataCache.skillPoints > 0) {
                 for (StatType stat : StatType.values()) {
+                    if (ClientPlayerDataCache.getStat(stat) >= StatType.MAX) continue; // au plafond, pas de +
                     int ry = top + STATS_FIRST_Y + stat.ordinal() * STATS_ROW_H;
                     int bx = left + 148, by = ry - 1;
                     if (mx >= bx && mx < bx + 14 && my >= by && my < by + 11) {

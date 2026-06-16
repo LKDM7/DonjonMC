@@ -46,6 +46,16 @@ public record SpendSkillPointPacket(StatType stat) implements CustomPacketPayloa
             PlayerData data = player.getData(ModAttachments.PLAYER_DATA);
             if (data.getSkillPoints() <= 0) return;
 
+            // Stat déjà au plafond → on ignore (on ne gaspille pas le point)
+            int current = switch (packet.stat()) {
+                case STRENGTH     -> data.getStrength();
+                case AGILITY      -> data.getAgility();
+                case VITALITY     -> data.getVitality();
+                case INTELLIGENCE -> data.getIntelligence();
+                case PERCEPTION   -> data.getPerception();
+            };
+            if (current >= StatType.MAX) return;
+
             switch (packet.stat()) {
                 case STRENGTH     -> data.setStrength(data.getStrength() + 1);
                 case AGILITY      -> data.setAgility(data.getAgility() + 1);
