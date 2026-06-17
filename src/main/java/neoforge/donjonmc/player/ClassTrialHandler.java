@@ -336,6 +336,7 @@ public final class ClassTrialHandler {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         tickPendingPhases(event);
+        reconcileWaves(event);
         tickPendingEnds(event);
 
         if (cleanupQueue.isEmpty()) return;
@@ -349,7 +350,9 @@ public final class ClassTrialHandler {
         while (budget-- > 0) {
             pos.set(job.x, job.y, job.z);
             if (!level.getBlockState(pos).isAir()) {
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+                // flag 2 | 16 : envoie au client mais saute les updates de voisinage
+                // (inutiles ici, on remplace tout par du vide)
+                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2 | 16);
             }
             // avance le curseur x → z → y (de haut en bas)
             if (++job.x > job.max.getX()) {
@@ -401,12 +404,50 @@ public final class ClassTrialHandler {
         ServerPlayer player = level.getServer().getPlayerList().getPlayer(session.playerId);
         if (player == null) return true; // logout géré par onLogout
 
+        advanceAfterWaveCleared(player, session);
+        return true;
+    }
+
+    /** Vague terminée : enchaîne la phase suivante ou conclut l'épreuve. */
+    private static void advanceAfterWaveCleared(ServerPlayer player, TrialSession session) {
         if (session.phase >= 4) {
             completeTrial(player, session);
         } else {
             schedulePhase(player, session, session.phase + 1);
         }
-        return true;
+    }
+
+    /**
+     * Filet anti-soft-lock : un mob d'épreuve peut disparaître sans déclencher de
+     * LivingDeathEvent (tombé dans le vide, déchargé, discard externe). Sans ça,
+     * {@code aliveMobs} ne se vide jamais et la phase reste bloquée à vie.
+     * Une fois par seconde, on purge les UUID qui ne correspondent plus à une
+     * entité vivante, et si la vague se retrouve vide on enchaîne quand même.
+     */
+    private static void reconcileWaves(ServerTickEvent.Post event) {
+        if (sessions.isEmpty()) return;
+        if (event.getServer().getTickCount() % 20 != 0) return; // 1 fois/seconde
+
+        ServerLevel level = event.getServer().getLevel(TRIAL_DIMENSION);
+        if (level == null) return;
+
+        for (TrialSession session : List.copyOf(sessions.values())) {
+            // On ne réconcilie qu'une phase réellement en cours (pas pendant la
+            // préparation de 30 s, où aliveMobs est légitimement vide).
+            if (session.pendingPhase != 0 || session.phase < 1) continue;
+
+            ServerPlayer player = event.getServer().getPlayerList().getPlayer(session.playerId);
+            if (player == null) continue; // logout géré par onLogout
+
+            session.aliveMobs.removeIf(id -> {
+                Entity e = level.getEntity(id);
+                return e == null || !e.isAlive();
+            });
+
+            if (session.aliveMobs.isEmpty()) {
+                advanceAfterWaveCleared(player, session);
+            }
+        }
     }
 
     private static void startPhase(ServerLevel level, ServerPlayer player, TrialSession session, int phase) {
